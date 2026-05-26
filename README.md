@@ -1,6 +1,6 @@
-# 🌿 pooki — Eco Learning Quiz Hub
+# 🌿 Cyber — Eco Learning Quiz Hub
 
-A Flask web app featuring **pooki**: an eco-themed learning hub for ages 6-12 with
+A Flask web app featuring **cyber**: an eco-themed learning hub for ages 6-12 with
 an auto-playing snake quiz, a math quiz, an eco-friendly cyber-security quiz, and
 an unlockable memory-match mini-game.
 
@@ -12,7 +12,7 @@ an unlockable memory-match mini-game.
 pooki/
 │
 ├── app.py                          ← Flask routes, SQLite, scoring, OTP email
-├── pooki.db                        ← SQLite database (auto-created on first run)
+├── cyber.db                        ← SQLite database (auto-created on first run)
 │
 ├── questions/                      ← All question banks (separate JSON files)
 │   ├── math_easy.json
