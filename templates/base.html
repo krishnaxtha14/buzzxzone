@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ {% block title %}Cyber{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Floating cyber background -->
+  <div class="leaf-bg" id="leaf-bg"></div>
+
+  <!-- Global spark canvas (top layer, pointer-events:none) -->
+  <canvas id="spark-canvas"></canvas>
+
+  <!-- Mute / music toggle -->
+  <button id="mute-btn" title="Toggle music" onclick="toggleMute()">🔊</button>
+
+  {% block body %}{% endblock %}
+
+  <script>
+  /* ══════════════════════════════════════════════════════════════
+     CYBER · Floating background symbols
+  ══════════════════════════════════════════════════════════════ */
+  const CYBER_SYMBOLS = ['⚡','💜','◆','✦','⬡','✧','🔮','💫','✨','◇'];
+  const bg = document.getElementById('leaf-bg');
+  for (let i = 0; i < 22; i++) {
+    const el = document.createElement('span');
+    el.className = 'leaf';
+    el.textContent = CYBER_SYMBOLS[Math.floor(Math.random() * CYBER_SYMBOLS.length)];
+    el.style.left              = Math.random() * 100 + 'vw';
+    el.style.animationDuration = (14 + Math.random() * 20) + 's';
+    el.style.animationDelay    = (-Math.random() * 22) + 's';
+    el.style.fontSize          = (0.9 + Math.random() * 1.2) + 'rem';
+    el.style.opacity           = '0';
+    bg.appendChild(el);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     CYBER · SPARK SYSTEM (all pages, all clicks/touches)
+  ══════════════════════════════════════════════════════════════ */
+  (function() {
+    const sc  = document.getElementById('spark-canvas');
+    const sCtx = sc.getContext('2d');
+    const sparks = [];
+    const SPARK_COLORS = ['#a855f7','#c084fc','#e879f9','#f0abfc','#ffffff','#818cf8'];
+
+    function resizeSpark() { sc.width = innerWidth; sc.height = innerHeight; }
+    resizeSpark();
+    window.addEventListener('resize', resizeSpark);
+
+    function spawnSparks(x, y, count) {
+      count = count || 18;
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.6;
+        const speed = 2.5 + Math.random() * 5;
+        sparks.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 1.5,
+          life: 1,
+          decay: 0.035 + Math.random() * 0.045,
+          size: 1.5 + Math.random() * 2.5,
+          color: SPARK_COLORS[Math.floor(Math.random() * SPARK_COLORS.length)]
+        });
+      }
+    }
+
+    function animateSparks() {
+      sCtx.clearRect(0, 0, sc.width, sc.height);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x  += s.vx;
+        s.y  += s.vy;
+        s.vy += 0.15;
+        s.life -= s.decay;
+        if (s.life <= 0) { sparks.splice(i, 1); continue; }
+
+        sCtx.globalAlpha = s.life;
+
+        /* Glowing dot */
+        const grd = sCtx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 2);
+        grd.addColorStop(0, s.color);
+        grd.addColorStop(1, 'transparent');
+        sCtx.fillStyle = grd;
+        sCtx.beginPath();
+        sCtx.arc(s.x, s.y, s.size * s.life * 1.5, 0, Math.PI * 2);
+        sCtx.fill();
+
+        /* Trail */
+        sCtx.strokeStyle = s.color;
+        sCtx.lineWidth   = s.size * s.life * 0.7;
+        sCtx.beginPath();
+        sCtx.moveTo(s.x, s.y);
+        sCtx.lineTo(s.x - s.vx * 3.5, s.y - s.vy * 3.5);
+        sCtx.stroke();
+      }
+      sCtx.globalAlpha = 1;
+      requestAnimationFrame(animateSparks);
+    }
+    animateSparks();
+
+    document.addEventListener('mousedown', e => spawnSparks(e.clientX, e.clientY));
+    document.addEventListener('touchstart', e => {
+      Array.from(e.touches).forEach(t => spawnSparks(t.clientX, t.clientY));
+    }, { passive: true });
+
+    window._spawnSparks = spawnSparks;
+  })();
+
+  /* ══════════════════════════════════════════════════════════════
+     CYBER · AUDIO ENGINE (ambient music + click sounds)
+  ══════════════════════════════════════════════════════════════ */
+  (function() {
+    let ctx = null, masterGain = null, muted = false, started = false;
+    let melodyTimer = null, bassTimer = null, padNodes = [];
+
+    /* C-minor pentatonic frequencies (3 octaves range) */
+    const MELODY = [261.6, 311.1, 392, 466.2, 523.3, 392, 311.1, 523.3,
+                    392, 261.6, 466.2, 311.1, 392, 523.3, 261.6, 466.2];
+    const BASS   = [65.4, 77.8, 98, 87.3, 65.4, 98, 77.8, 87.3];
+    let mIdx = 0, bIdx = 0;
+
+    function initCtx() {
+      if (ctx) return;
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.45;
+      masterGain.connect(ctx.destination);
+    }
+
+    function startAmbient() {
+      if (started || muted) return;
+      started = true;
+
+      /* ── Pad / drone layer ── */
+      [130.8, 155.6, 196].forEach((freq, i) => {
+        const osc  = ctx.createOscillator();
+        const lfo  = ctx.createOscillator();
+        const lfoG = ctx.createGain();
+        const g    = ctx.createGain();
+        lfo.frequency.value = 0.25 + i * 0.08;
+        lfoG.gain.value = 1.5;
+        lfo.connect(lfoG); lfoG.connect(osc.frequency);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(g); g.connect(masterGain);
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 3);
+        lfo.start(); osc.start();
+        padNodes.push(osc, lfo);
+      });
+
+      /* ── Melody arpeggio ── */
+      melodyTimer = setInterval(() => {
+        if (muted || !ctx) return;
+        const t   = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        osc.connect(g); g.connect(masterGain);
+        osc.type = 'triangle';
+        osc.frequency.value = MELODY[mIdx % MELODY.length];
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.12, t + 0.04);
+        g.gain.linearRampToValueAtTime(0, t + 0.5);
+        osc.start(t); osc.stop(t + 0.55);
+        mIdx++;
+      }, 320);
+
+      /* ── Bass pulse ── */
+      bassTimer = setInterval(() => {
+        if (muted || !ctx) return;
+        const t   = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        osc.connect(g); g.connect(masterGain);
+        osc.type = 'sine';
+        osc.frequency.value = BASS[bIdx % BASS.length];
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.28, t + 0.04);
+        g.gain.linearRampToValueAtTime(0, t + 1.1);
+        osc.start(t); osc.stop(t + 1.2);
+        bIdx++;
+      }, 640);
+    }
+
+    /* Short "zap" click sound */
+    function playClick() {
+      if (!ctx || muted) return;
+      const t   = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(masterGain);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(780, t);
+      osc.frequency.exponentialRampToValueAtTime(300, t + 0.07);
+      g.gain.setValueAtTime(0.22, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      osc.start(t); osc.stop(t + 0.1);
+    }
+
+    /* Correct-answer chime (ascending) */
+    window.playCorrectSound = function() {
+      if (!ctx || muted) return;
+      [523, 659, 784].forEach((freq, i) => {
+        const t   = ctx.currentTime + i * 0.1;
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        osc.connect(g); g.connect(masterGain);
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.2, t + 0.04);
+        g.gain.linearRampToValueAtTime(0, t + 0.25);
+        osc.start(t); osc.stop(t + 0.3);
+      });
+    };
+
+    /* Wrong-answer buzz (descending) */
+    window.playWrongSound = function() {
+      if (!ctx || muted) return;
+      [300, 220].forEach((freq, i) => {
+        const t   = ctx.currentTime + i * 0.12;
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        osc.connect(g); g.connect(masterGain);
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.14, t + 0.03);
+        g.gain.linearRampToValueAtTime(0, t + 0.22);
+        osc.start(t); osc.stop(t + 0.25);
+      });
+    };
+
+    /* Mute toggle */
+    window.toggleMute = function() {
+      muted = !muted;
+      const btn = document.getElementById('mute-btn');
+      btn.textContent = muted ? '🔇' : '🔊';
+      if (masterGain) {
+        masterGain.gain.setTargetAtTime(muted ? 0 : 0.45, ctx.currentTime, 0.15);
+      }
+    };
+
+    /* Start everything on first interaction */
+    function onFirstInteraction() {
+      initCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      startAmbient();
+      playClick();
+    }
+
+    let audioReady = false;
+    document.addEventListener('mousedown', () => {
+      if (!audioReady) { audioReady = true; onFirstInteraction(); return; }
+      initCtx();
+      playClick();
+    });
+    document.addEventListener('touchstart', () => {
+      if (!audioReady) { audioReady = true; onFirstInteraction(); return; }
+      initCtx();
+      playClick();
+    }, { passive: true });
+  })();
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

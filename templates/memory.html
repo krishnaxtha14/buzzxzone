@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Memory Match · Cyber{% endblock %}
+
+{% block body %}
+<div class="app-wrap">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo"><img src="{{ url_for('static', filename='logo.svg') }}" width="36" height="36" alt="Cyber" style="vertical-align:middle;margin-right:8px;">CYBER</div>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/games/snake">🐍 Eco Snake Quiz</a>
+    <a href="/games/math">🧮 Math Quiz</a>
+    <a href="/games/cyber">🛡️ Cyber Quiz</a>
+    <a href="/games/memory" class="active">🧩 Memory Match</a>
+    <a href="/logout" class="logout">⏻ Logout</a>
+  </nav>
+
+  <div class="main-content">
+    <div style="display:flex;flex-direction:column;align-items:center;">
+
+      <h2 class="page-heading" style="text-align:center;">🧩 MEMORY MATCH</h2>
+      <p class="page-sub">Flip and match all pairs to win!</p>
+
+      <div class="mem-hud">
+        <span>Moves <strong id="mem-moves">0</strong></span>
+        <span>Pairs <strong id="mem-pairs">0</strong>/8</span>
+        <span style="color:var(--muted);">Time <strong id="mem-timer" style="color:var(--yellow);">0s</strong></span>
+      </div>
+
+      <div id="memory-board"></div>
+
+      <button class="mem-new-btn" onclick="initMemory()">🔄 NEW GAME</button>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+/* ── Memory Match logic ── */
+const EMOJIS = ['🌿','⚡','🔥','💧','🌍','🌻','🦋','🐸'];
+let cards=[], flipped=[], matched=0, moves=0, startTime=null, timerInterval=null, locked=false;
+
+function initMemory() {
+  const board = document.getElementById('memory-board');
+  board.innerHTML = '';
+  matched=0; moves=0; flipped=[];
+  document.getElementById('mem-moves').textContent = 0;
+  document.getElementById('mem-pairs').textContent = 0;
+  document.getElementById('mem-timer').textContent = '0s';
+  clearInterval(timerInterval);
+  startTime = null;
+  locked    = false;
+
+  const deck = [...EMOJIS, ...EMOJIS].sort(() => Math.random() - 0.5);
+  cards = [];
+
+  deck.forEach((em) => {
+    const c = document.createElement('div');
+    c.className      = 'mem-card';
+    c.dataset.em     = em;
+    c.dataset.open   = 'false';
+    c.dataset.hidden = em;
+    c.textContent    = '';
+    c.addEventListener('click', () => flipCard(c));
+    board.appendChild(c);
+    cards.push(c);
+  });
+}
+
+function flipCard(c) {
+  if (locked || c.dataset.open === 'true' || flipped.length === 2) return;
+
+  if (!startTime) {
+    startTime     = Date.now();
+    timerInterval = setInterval(() => {
+      document.getElementById('mem-timer').textContent =
+        Math.floor((Date.now() - startTime) / 1000) + 's';
+    }, 1000);
+  }
+
+  c.dataset.open  = 'true';
+  c.textContent   = c.dataset.hidden;
+  c.classList.add('flipped');
+  flipped.push(c);
+
+  if (flipped.length === 2) {
+    moves++;
+    document.getElementById('mem-moves').textContent = moves;
+    locked = true;
+
+    if (flipped[0].dataset.em === flipped[1].dataset.em) {
+      flipped.forEach(f => f.classList.replace('flipped','matched'));
+      matched++;
+      document.getElementById('mem-pairs').textContent = matched;
+      flipped = [];
+      locked  = false;
+
+      if (matched === 8) {
+        clearInterval(timerInterval);
+        const secs = Math.floor((Date.now() - startTime) / 1000);
+        setTimeout(() => alert(
+          '🎉 YOU WIN!\nMoves: ' + moves + '  |  Time: ' + secs + 's'
+        ), 200);
+      }
+    } else {
+      setTimeout(() => {
+        flipped.forEach(f => {
+          f.dataset.open  = 'false';
+          f.textContent   = '';
+          f.classList.remove('flipped');
+        });
+        flipped = [];
+        locked  = false;
+      }, 900);
+    }
+  }
+}
+
+initMemory();
+</script>
+{% endblock %}

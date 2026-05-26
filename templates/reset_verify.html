@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Verify Reset OTP · Cyber{% endblock %}
+{% block body %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-title">
+      <span class="emoji">📨</span>
+      VERIFY OTP
+    </div>
+
+    <form method="POST">
+      <div class="field">
+        <input name="otp" placeholder="Enter OTP" maxlength="6"
+               inputmode="numeric" required
+               style="letter-spacing:6px;text-align:center;font-size:1.3rem;">
+      </div>
+      <button class="btn" type="submit">VERIFY →</button>
+    </form>
+
+    {% if error %}<p class="err">⚠ {{ error }}</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

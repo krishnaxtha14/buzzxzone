@@ -1,0 +1,25 @@
+<!-- ════════════════════════════════════════
+     register.html
+════════════════════════════════════════ -->
+{% extends "base.html" %}
+{% block title %}Register · Cyber{% endblock %}
+{% block body %}
+<div class="page-wrap">
+  <div class="card">
+    <div class="card-title">
+      <span class="emoji">🌱</span>
+      CREATE ACCOUNT
+    </div>
+
+    <form method="POST">
+      <div class="field"><input name="username" placeholder="Username" required></div>
+      <div class="field"><input name="email"    type="email" placeholder="Email" required></div>
+      <div class="field"><input name="password" type="password" placeholder="Password" required></div>
+      <button class="btn" type="submit">REGISTER →</button>
+    </form>
+
+    {% if error %}<p class="err">⚠ {{ error }}</p>{% endif %}
+    <div class="link-row"><a href="/login">Already have an account? LOGIN</a></div>
+  </div>
+</div>
+{% endblock %}
