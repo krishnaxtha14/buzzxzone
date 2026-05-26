@@ -311,7 +311,7 @@ function finishQuiz() {
   elDone.classList.remove('hidden');
   elDoneMsg.innerHTML = `
     🎯 You scored <strong>${score}</strong> points
-    (${score / POINTS_PER_Q} of ${QUESTIONS.length} correct).
+    (${Math.floor(score / POINTS_PER_Q)} of ${QUESTIONS.length} correct).
   `;
   saveScore(score, true).then(data => {
     if (data && data.ok) {

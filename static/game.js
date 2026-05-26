@@ -204,28 +204,24 @@ function onCorrect() {
   score       += POINTS_PER_Q;
   growPending += 1;
   // Save the running score immediately so partial plays still unlock memory.
-  saveScore(score, false);
+  saveScore(score);
   continueAfterQuestion();
 }
 
 // ── POST score to server (used incrementally + on game over) ────
-function saveScore(currentScore, isFinal) {
+function saveScore(currentScore) {
   try {
-    fetch('/api/submit_score', {
+    return fetch('/api/submit_score', {
       method:      'POST',
       credentials: 'same-origin',
-      keepalive:   true,                 // survives page navigation / tab close
+      keepalive:   true,
       headers:     { 'Content-Type': 'application/json' },
       body:        JSON.stringify({ score: currentScore, source: 'snake' }),
-    }).then(r => r.json()).then(data => {
-      if (isFinal && data && data.ok && data.memory_unlocked) {
-        const note = document.createElement('p');
-        note.innerHTML = '🧩 <strong>Memory Match unlocked!</strong>';
-        note.style.cssText = 'color:var(--lime);margin-top:12px;font-weight:700;';
-        overMessage.appendChild(note);
-      }
-    }).catch(err => console.warn('[cyber] saveScore failed:', err));
-  } catch (e) { console.warn('[cyber] saveScore threw:', e); }
+    }).then(r => r.json()).catch(err => {
+      console.warn('[cyber] saveScore failed:', err);
+      return null;
+    });
+  } catch (e) { console.warn('[cyber] saveScore threw:', e); return Promise.resolve(null); }
 }
 
 // ── Wrong (or time-out): shrink ─────────────────────────────────
@@ -273,8 +269,20 @@ function endGame(message, win) {
     Questions answered: <strong>${qIndex}</strong>/${QUESTIONS.length}`;
   show(overScreen);
 
-  // Final submission (also keepalive so it survives any navigation).
-  saveScore(score, true);
+  saveScore(score).then(data => {
+    if (!data || !data.ok) return;
+    const info = document.createElement('p');
+    info.style.cssText = 'margin-top:12px;color:var(--muted);font-size:0.9rem;';
+    info.innerHTML = `Best score: <strong style="color:var(--lime)">${data.high_score}</strong>` +
+                     ` — unlock Memory Match at <strong>${data.threshold}</strong>.`;
+    overMessage.appendChild(info);
+    if (data.memory_unlocked) {
+      const note = document.createElement('p');
+      note.innerHTML = '🧩 <strong>Memory Match unlocked!</strong>';
+      note.style.cssText = 'color:var(--lime);margin-top:8px;font-weight:700;';
+      overMessage.appendChild(note);
+    }
+  });
 }
 
 // ── HUD ─────────────────────────────────────────────────────────
