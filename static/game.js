@@ -65,6 +65,10 @@ function placeLeaf() {
 
 // ── Start / restart ─────────────────────────────────────────────
 function startGame() {
+  // Show real question total now that QUESTIONS is loaded
+  const elQtotal = document.getElementById('hud-qtotal');
+  if (elQtotal) elQtotal.textContent = QUESTIONS.length;
+
   snake        = [{x:12,y:12},{x:11,y:12},{x:10,y:12}];
   dir          = {x:1,y:0};
   score        = 0;
@@ -180,6 +184,7 @@ function openQuestion() {
 // ── Player answers ──────────────────────────────────────────────
 function handleAnswer(index) {
   if (!questionOpen) return;
+  questionOpen = false;   // block timer from firing a wrong answer on the same question
   const q       = QUESTIONS[qIndex];
   const correct = (index === q.correct);
 

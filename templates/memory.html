@@ -39,7 +39,7 @@
 <script>
 /* ── Memory Match logic ── */
 const EMOJIS = ['🌿','⚡','🔥','💧','🌍','🌻','🦋','🐸'];
-let cards=[], flipped=[], matched=0, moves=0, startTime=null, timerInterval=null, locked=false;
+let cards=[], flipped=[], matched=0, moves=0, startTime=null, timerInterval=null, locked=false, flipTimeoutId=null;
 
 function initMemory() {
   const board = document.getElementById('memory-board');
@@ -49,6 +49,8 @@ function initMemory() {
   document.getElementById('mem-pairs').textContent = 0;
   document.getElementById('mem-timer').textContent = '0s';
   clearInterval(timerInterval);
+  clearTimeout(flipTimeoutId);
+  flipTimeoutId = null;
   startTime = null;
   locked    = false;
 
@@ -90,7 +92,7 @@ function flipCard(c) {
     locked = true;
 
     if (flipped[0].dataset.em === flipped[1].dataset.em) {
-      flipped.forEach(f => f.classList.replace('flipped','matched'));
+      flipped.forEach(f => { f.classList.remove('flipped'); f.classList.add('matched'); });
       matched++;
       document.getElementById('mem-pairs').textContent = matched;
       flipped = [];
@@ -104,14 +106,17 @@ function flipCard(c) {
         ), 200);
       }
     } else {
-      setTimeout(() => {
-        flipped.forEach(f => {
+      // Snapshot the two cards now so a "NEW GAME" click can't corrupt the new game
+      const cardsToFlipBack = flipped.slice();
+      flipTimeoutId = setTimeout(() => {
+        cardsToFlipBack.forEach(f => {
           f.dataset.open  = 'false';
           f.textContent   = '';
           f.classList.remove('flipped');
         });
         flipped = [];
         locked  = false;
+        flipTimeoutId = null;
       }, 900);
     }
   }
