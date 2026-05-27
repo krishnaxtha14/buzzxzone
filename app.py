@@ -30,7 +30,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-pr
 # DATABASE (PostgreSQL via Supabase)
 # ─────────────────────────────────────────────
 def get_db():
-    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
     return conn
 
 
