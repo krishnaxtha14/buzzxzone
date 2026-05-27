@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Cyber Road Racer · Cyber{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<style>
+  .racer-wrap { display:flex; flex-direction:column; align-items:center; width:100%; }
+
+  .racer-box {
+    position: relative;
+    width: 100%;
+    max-width: 860px;
+    border: 2px solid rgba(168,85,247,0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(168,85,247,0.15);
+  }
+
+  #racing-canvas { display:block; width:100%; height:520px; }
+
+  .racer-overlay {
+    position: absolute; inset: 0;
+    background: rgba(4,2,15,0.93);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 28px;
+  }
+  .racer-overlay.hidden { display:none; }
+
+  .ctrl-row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:12px 0 22px; }
+  .ctrl-chip {
+    background: rgba(168,85,247,0.1);
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 8px; padding: 7px 16px;
+    font-size: .82rem; color: var(--muted); font-weight: 700;
+  }
+  .ctrl-chip strong { color: var(--green); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="app-wrap">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <img src="{{ url_for('static', filename='logo.svg') }}" width="36" height="36" alt="Cyber" style="vertical-align:middle;margin-right:8px;">CYBER
+    </div>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/games/snake">🐍 Eco Snake Quiz</a>
+    <a href="/games/math">🧮 Math Quiz</a>
+    <a href="/games/cyber">🛡️ Cyber Quiz</a>
+    <a href="/games/memory">🧩 Memory Match</a>
+    <a href="/games/racing" class="active">🏎️ Cyber Racer</a>
+    <a href="/logout" class="logout">⏻ Logout</a>
+  </nav>
+
+  <div class="main-content">
+    <div class="racer-wrap">
+
+      <h2 class="page-heading" style="text-align:center;">🏎️ CYBER ROAD RACER</h2>
+
+      <div class="hud" style="margin-bottom:12px;">
+        <span>Score <strong id="r-score">0</strong></span>
+        <span>Speed <strong id="r-speed">80 KM/H</strong></span>
+        <span>Lives <strong id="r-lives">❤️❤️❤️</strong></span>
+      </div>
+
+      <div class="racer-box">
+        <canvas id="racing-canvas"></canvas>
+
+        <!-- Start screen -->
+        <div class="racer-overlay" id="r-start">
+          <div class="overlay-title">🏎️ CYBER ROAD RACER</div>
+          <p>Dodge oncoming traffic on the neon highway!<br>Switch lanes to survive — speed increases over time.</p>
+          <div class="ctrl-row">
+            <div class="ctrl-chip"><strong>← →</strong> Change lane</div>
+            <div class="ctrl-chip"><strong>A / D</strong> Change lane</div>
+            <div class="ctrl-chip"><strong>Swipe</strong> mobile</div>
+          </div>
+          <button class="overlay-btn" onclick="startRacing()">START RACE →</button>
+        </div>
+
+        <!-- Game over -->
+        <div class="racer-overlay hidden" id="r-over">
+          <div class="overlay-title red">💥 CRASH!</div>
+          <p>You scored</p>
+          <p style="font-family:var(--font-head);font-size:2.2rem;color:var(--green);margin:6px 0 16px;" id="r-final">0</p>
+          <p id="r-unlock" style="display:none;color:var(--yellow);font-weight:700;margin-bottom:12px;">🔓 Memory Match unlocked!</p>
+          <button class="overlay-btn" onclick="startRacing()">TRY AGAIN →</button>
+          <a href="/dashboard" style="display:block;margin-top:12px;color:var(--muted);font-size:.85rem;">← Back to Dashboard</a>
+        </div>
+      </div>
+
+      <p class="hint" style="margin-top:10px;">🏎️ Speed increases every second — how long can you survive?</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='racing.js') }}"></script>
+{% endblock %}

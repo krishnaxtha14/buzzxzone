@@ -383,6 +383,13 @@ def play_quiz(category, difficulty):
     )
 
 
+@app.route("/games/racing")
+def racing():
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("racing.html", username=session.get("username", "PLAYER"))
+
+
 @app.route("/games/memory")
 def memory():
     if "user_id" not in session:
