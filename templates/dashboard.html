@@ -21,8 +21,8 @@
     <p class="page-sub">PLAYER STATUS: 🟢 ONLINE &nbsp;·&nbsp;
        BEST SCORE: <strong style="color:var(--green)">{{ progress.high_score }}</strong></p>
 
-    {% if session.get('locked_msg') %}
-      <p class="err" style="margin-bottom:18px;">{{ session.pop('locked_msg') }}</p>
+    {% if locked_msg %}
+      <p class="err" style="margin-bottom:18px;">{{ locked_msg }}</p>
     {% endif %}
 
     <div class="game-grid">

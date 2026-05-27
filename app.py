@@ -1,8 +1,9 @@
 
-
 from flask import Flask, render_template, redirect, request, session, jsonify
-import sqlite3
+import psycopg2
+import psycopg2.extras
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 import random
 import os
 import json
@@ -10,37 +11,41 @@ import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 
+load_dotenv()
+
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Vercel's filesystem is read-only except /tmp; data won't persist between cold starts
-DB_PATH = "/tmp/cyber.db" if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "cyber.db")
+BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
 QUESTIONS_DIR     = os.path.join(BASE_DIR, "questions")
-QUESTION_TIME_SEC = 20            # 20 seconds per question (hard cap)
-POINTS_PER_Q      = 10            # 10 points per correct answer
-UNLOCK_THRESHOLD  = 100           # Best score needed to unlock memory match
+QUESTION_TIME_SEC = 20
+POINTS_PER_Q      = 10
+UNLOCK_THRESHOLD  = 100
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-production")
 
 
 # ─────────────────────────────────────────────
-# DATABASE (SQLite — auto-created on first run)
+# DATABASE (PostgreSQL via Supabase)
 # ─────────────────────────────────────────────
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
     return conn
 
 
+def get_cur(conn):
+    """Return a dict-cursor so rows are accessible by column name."""
+    return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+
 def init_db():
-    """Create the users table and migrate old schemas in-place."""
+    """Create the users table if it doesn't exist, and run any pending migrations."""
     conn = get_db()
-    cur  = conn.cursor()
+    cur  = conn.cursor()          # plain cursor is fine here (no row access)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            id              SERIAL PRIMARY KEY,
             username        TEXT NOT NULL,
             email           TEXT NOT NULL UNIQUE,
             password        TEXT NOT NULL,
@@ -48,8 +53,13 @@ def init_db():
             memory_unlocked INTEGER NOT NULL DEFAULT 0
         )
     """)
-    # Migration: if an older users table exists without these columns, add them.
-    existing_cols = {row[1] for row in cur.execute("PRAGMA table_info(users)").fetchall()}
+    # Migration: add columns that may be missing in older deployments
+    cur.execute("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'users'
+    """)
+    existing_cols = {row[0] for row in cur.fetchall()}
     if "high_score" not in existing_cols:
         cur.execute("ALTER TABLE users ADD COLUMN high_score INTEGER NOT NULL DEFAULT 0")
         print("[cyber] Migrated: added users.high_score column")
@@ -60,12 +70,14 @@ def init_db():
     conn.close()
 
 
-init_db()
+try:
+    init_db()
+except Exception as _e:
+    print("[cyber] init_db warning:", _e)
 
 
 # ─────────────────────────────────────────────
 # EMAIL (OTP via Gmail)
-# Replace with your own Gmail address + app password.
 # ─────────────────────────────────────────────
 def send_otp_email(to_email, otp):
     sender_email    = os.environ.get("GMAIL_USER", "")
@@ -81,7 +93,6 @@ def send_otp_email(to_email, otp):
         server.send_message(msg)
         server.quit()
     except Exception as e:
-        # Don't crash the app if email isn't configured.
         print("[cyber] Email error:", e)
         print(f"[cyber] (DEV) OTP for {to_email} is: {otp}")
 
@@ -90,7 +101,6 @@ def send_otp_email(to_email, otp):
 # QUESTIONS LOADER
 # ─────────────────────────────────────────────
 def load_questions(name):
-    """Load a question bank JSON file from /questions and shuffle it."""
     path = os.path.join(QUESTIONS_DIR, f"{name}.json")
     with open(path, "r", encoding="utf-8") as f:
         pool = json.load(f)
@@ -104,10 +114,12 @@ def load_questions(name):
 def update_high_score(user_id, new_score):
     """Save the user's high score and unlock memory match if threshold reached."""
     conn = get_db()
-    cur  = conn.cursor()
-    row  = cur.execute(
-        "SELECT high_score, memory_unlocked FROM users WHERE id=?", (user_id,)
-    ).fetchone()
+    cur  = get_cur(conn)
+    cur.execute(
+        "SELECT high_score, memory_unlocked FROM users WHERE id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
     if row is None:
         conn.close()
         return 0, False
@@ -116,7 +128,7 @@ def update_high_score(user_id, new_score):
     unlocked = 1 if (best >= UNLOCK_THRESHOLD or row["memory_unlocked"]) else 0
 
     cur.execute(
-        "UPDATE users SET high_score=?, memory_unlocked=? WHERE id=?",
+        "UPDATE users SET high_score = %s, memory_unlocked = %s WHERE id = %s",
         (best, unlocked, user_id),
     )
     conn.commit()
@@ -127,9 +139,12 @@ def update_high_score(user_id, new_score):
 def get_user_progress(user_id):
     """Returns dict with high_score, memory_unlocked, threshold, progress_pct."""
     conn = get_db()
-    row  = conn.execute(
-        "SELECT high_score, memory_unlocked FROM users WHERE id=?", (user_id,)
-    ).fetchone()
+    cur  = get_cur(conn)
+    cur.execute(
+        "SELECT high_score, memory_unlocked FROM users WHERE id = %s",
+        (user_id,)
+    )
+    row = cur.fetchone()
     conn.close()
     if row is None:
         return {"high_score": 0, "memory_unlocked": False,
@@ -157,17 +172,20 @@ def register():
     error = ""
     if request.method == "POST":
         conn = get_db()
+        cur  = get_cur(conn)
         try:
-            conn.execute(
-                "INSERT INTO users(username, email, password) VALUES(?,?,?)",
+            cur.execute(
+                "INSERT INTO users(username, email, password) VALUES(%s, %s, %s)",
                 (request.form["username"],
                  request.form["email"],
                  generate_password_hash(request.form["password"])),
             )
             conn.commit()
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
+            conn.rollback()
             error = "Email already exists!"
-        conn.close()
+        finally:
+            conn.close()
         if not error:
             return redirect("/login")
     return render_template("register.html", error=error)
@@ -178,9 +196,12 @@ def login():
     error = ""
     if request.method == "POST":
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM users WHERE email=?", (request.form["email"],)
-        ).fetchone()
+        cur  = get_cur(conn)
+        cur.execute(
+            "SELECT * FROM users WHERE email = %s",
+            (request.form["email"],)
+        )
+        user = cur.fetchone()
         conn.close()
         if not user or not check_password_hash(user["password"], request.form["password"]):
             error = "Invalid credentials!"
@@ -218,9 +239,12 @@ def forgot():
     error = ""
     if request.method == "POST":
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM users WHERE email=?", (request.form["email"],)
-        ).fetchone()
+        cur  = get_cur(conn)
+        cur.execute(
+            "SELECT * FROM users WHERE email = %s",
+            (request.form["email"],)
+        )
+        user = cur.fetchone()
         conn.close()
         if not user:
             error = "Email not found!"
@@ -257,8 +281,9 @@ def new_password():
             error = "Passwords do not match!"
         else:
             conn = get_db()
-            conn.execute(
-                "UPDATE users SET password=? WHERE id=?",
+            cur  = get_cur(conn)
+            cur.execute(
+                "UPDATE users SET password = %s WHERE id = %s",
                 (generate_password_hash(request.form["password"]), session["reset_user"]),
             )
             conn.commit()
@@ -281,11 +306,13 @@ def logout():
 def dashboard():
     if "user_id" not in session:
         return redirect("/login")
-    progress = get_user_progress(session["user_id"])
+    progress    = get_user_progress(session["user_id"])
+    locked_msg  = session.pop("locked_msg", None)
     return render_template(
         "dashboard.html",
         username=session.get("username", "PLAYER"),
         progress=progress,
+        locked_msg=locked_msg,
     )
 
 
@@ -343,10 +370,7 @@ def play_quiz(category, difficulty):
     except FileNotFoundError:
         return redirect(f"/games/{category}")
 
-    title_map = {
-        "math":  "MATH QUIZ",
-        "cyber": "ECO CYBER-SECURITY QUIZ",
-    }
+    title_map = {"math": "MATH QUIZ", "cyber": "ECO CYBER-SECURITY QUIZ"}
     return render_template(
         "quiz.html",
         questions_json=json.dumps(questions),
@@ -365,23 +389,20 @@ def memory():
         return redirect("/login")
     progress = get_user_progress(session["user_id"])
     if not progress["memory_unlocked"]:
-        # Send them back with a flash-style message in session
         session["locked_msg"] = (
             f"🔒 Memory Match is locked. Reach {progress['threshold']} points "
             f"to unlock it! (Best so far: {progress['high_score']})"
         )
         return redirect("/dashboard")
-    return render_template("memory.html",
-                           username=session.get("username", "PLAYER"))
+    return render_template("memory.html", username=session.get("username", "PLAYER"))
 
 
 # ─────────────────────────────────────────────
-# SCORE SUBMISSION (called by snake/quiz JS at end of game)
+# SCORE SUBMISSION
 # ─────────────────────────────────────────────
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
     if "user_id" not in session:
-        print("[cyber] submit_score: not_logged_in")
         return jsonify({"ok": False, "error": "not_logged_in"}), 401
     try:
         data       = request.get_json(silent=True) or {}
