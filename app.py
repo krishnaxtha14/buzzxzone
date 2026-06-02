@@ -30,7 +30,13 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-pr
 # DATABASE (PostgreSQL via Supabase)
 # ─────────────────────────────────────────────
 def get_db():
-    conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL environment variable is not set")
+    conn = psycopg2.connect(url, sslmode="require",
+                            connect_timeout=8,
+                            keepalives=1,
+                            keepalives_idle=30)
     return conn
 
 
@@ -157,6 +163,20 @@ def get_user_progress(user_id):
         "threshold":       UNLOCK_THRESHOLD,
         "progress_pct":    pct,
     }
+
+
+# ─────────────────────────────────────────────
+# HEALTH CHECK  (visit /health to verify DB)
+# ─────────────────────────────────────────────
+@app.route("/health")
+def health():
+    try:
+        conn = get_db()
+        conn.cursor().execute("SELECT 1")
+        conn.close()
+        return jsonify({"status": "ok", "database": "connected"})
+    except Exception as e:
+        return jsonify({"status": "error", "database": str(e)}), 500
 
 
 # ─────────────────────────────────────────────

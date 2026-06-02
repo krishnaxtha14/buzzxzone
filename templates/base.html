@@ -111,6 +111,166 @@
   })();
 
   /* ══════════════════════════════════════════════════════════════
+     CYBER · NEON MOUSE TRAIL
+  ══════════════════════════════════════════════════════════════ */
+  (function() {
+    const canvas = document.getElementById('spark-canvas'); // reuse existing canvas
+    const ctx    = canvas.getContext('2d');
+
+    const TRAIL_COLORS = [
+      '#22c55e', '#4ade80', '#86efac',
+      '#06b6d4', '#38bdf8', '#fbbf24',
+      '#a3e635', '#34d399'
+    ];
+
+    const trail     = [];
+    const MAX_TRAIL = 38;
+    let   mouseX    = -999, mouseY = -999;
+    let   lastX     = -999, lastY  = -999;
+    let   colorIdx  = 0;
+    let   colorTick = 0;
+
+    // Track mouse position
+    document.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      mouseX = t.clientX;
+      mouseY = t.clientY;
+    }, { passive: true });
+
+    function addTrailPoint(x, y) {
+      if (Math.abs(x - lastX) < 2 && Math.abs(y - lastY) < 2) return;
+      lastX = x; lastY = y;
+      colorTick++;
+      if (colorTick % 3 === 0) colorIdx = (colorIdx + 1) % TRAIL_COLORS.length;
+
+      trail.push({
+        x, y,
+        color:  TRAIL_COLORS[colorIdx],
+        life:   1.0,
+        size:   4 + Math.random() * 3,
+        vx:     (Math.random() - 0.5) * 0.8,
+        vy:     (Math.random() - 0.5) * 0.8,
+      });
+      if (trail.length > MAX_TRAIL) trail.shift();
+    }
+
+    function drawTrail() {
+      // Draw each trail particle (layered on top of spark canvas each frame)
+      for (let i = trail.length - 1; i >= 0; i--) {
+        const p = trail[i];
+        p.life -= 0.045;
+        p.x    += p.vx;
+        p.y    += p.vy;
+        if (p.life <= 0) { trail.splice(i, 1); continue; }
+
+        const alpha = p.life;
+        const size  = p.size * p.life;
+
+        // Outer glow
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 3.5);
+        grad.addColorStop(0, p.color + 'cc');
+        grad.addColorStop(0.4, p.color + '55');
+        grad.addColorStop(1, 'transparent');
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.fillStyle   = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner bright core
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle   = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Colored ring
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth   = 1.2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 1.1, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Connect trail points with a glowing line
+    function drawTrailLine() {
+      if (trail.length < 2) return;
+      ctx.save();
+      ctx.lineCap    = 'round';
+      ctx.lineJoin   = 'round';
+      for (let i = 1; i < trail.length; i++) {
+        const a = trail[i - 1];
+        const b = trail[i];
+        const t = i / trail.length;
+        ctx.globalAlpha = t * 0.45 * b.life;
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth   = b.size * t * 0.9;
+        ctx.shadowBlur  = 8;
+        ctx.shadowColor = b.color;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Custom cursor dot
+    function drawCursor() {
+      if (mouseX < 0) return;
+      const t = Date.now() * 0.003;
+      const r = 7 + Math.sin(t * 3) * 2;
+      const col = TRAIL_COLORS[colorIdx];
+
+      // Outer pulse ring
+      ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.15;
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = 1.5;
+      ctx.shadowBlur  = 12;
+      ctx.shadowColor = col;
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner dot
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle   = '#ffffff';
+      ctx.shadowBlur  = 6;
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 1;
+    }
+
+    // Hook into the existing spark animation loop via a separate rAF
+    let lastFrame = 0;
+    function trailLoop(ts) {
+      requestAnimationFrame(trailLoop);
+      // Throttle to ~60fps
+      if (ts - lastFrame < 14) return;
+      lastFrame = ts;
+
+      addTrailPoint(mouseX, mouseY);
+      drawTrailLine();
+      drawTrail();
+      drawCursor();
+    }
+    requestAnimationFrame(trailLoop);
+  })();
+
+  /* ══════════════════════════════════════════════════════════════
      CYBER · AUDIO ENGINE (ambient music + click sounds)
   ══════════════════════════════════════════════════════════════ */
   (function() {
