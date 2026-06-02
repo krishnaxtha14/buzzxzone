@@ -253,6 +253,32 @@
   <!-- Tooltip -->
   <div id="item-tooltip" class="hidden"></div>
 
+  <!-- ── Mobile Controls (hidden on desktop) ──────────────────── -->
+  <div id="mobile-ui" class="hidden">
+    <!-- Joystick zone: entire left 45% of screen -->
+    <div id="joy-zone">
+      <div id="joy-base">
+        <div id="joy-ring"></div>
+        <div id="joy-thumb"></div>
+      </div>
+    </div>
+    <!-- Camera swipe zone: right 55% -->
+    <div id="cam-zone"></div>
+    <!-- Action buttons cluster (bottom right) -->
+    <div id="mob-action-cluster">
+      <button class="mob-btn" id="mob-attack" title="Attack">⚔</button>
+      <button class="mob-btn" id="mob-gather" title="Gather">⛏</button>
+      <button class="mob-btn mob-btn-sm" id="mob-jump"   title="Jump">↑</button>
+      <button class="mob-btn mob-btn-sm" id="mob-sprint" title="Sprint">⚡</button>
+      <button class="mob-btn mob-btn-sm" id="mob-crouch" title="Crouch">↓</button>
+    </div>
+    <!-- Top buttons -->
+    <div id="mob-top-btns">
+      <button class="mob-btn mob-btn-sm" id="mob-inv"  title="Inventory">🎒</button>
+      <button class="mob-btn mob-btn-sm" id="mob-menu" title="Menu">☰</button>
+    </div>
+  </div>
+
 </div><!-- /game-root -->
 
 <!-- Three.js r128 -->
@@ -263,6 +289,8 @@
 <script>const USERNAME = {{ username | tojson }};</script>
 
 <!-- Game modules (order matters) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <script src="{{ url_for('static', filename='survival/js/config.js') }}"></script>
 <script src="{{ url_for('static', filename='survival/js/noise.js') }}"></script>
 <script src="{{ url_for('static', filename='survival/js/audio.js') }}"></script>
@@ -275,6 +303,7 @@
 <script src="{{ url_for('static', filename='survival/js/environment.js') }}"></script>
 <script src="{{ url_for('static', filename='survival/js/ui.js') }}"></script>
 <script src="{{ url_for('static', filename='survival/js/save.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/mobile.js') }}"></script>
 <script src="{{ url_for('static', filename='survival/js/game.js') }}"></script>
 </body>
 </html>

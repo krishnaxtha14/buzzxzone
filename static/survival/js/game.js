@@ -81,6 +81,7 @@ class Game {
     this.environment = new EnvironmentSystem(this);
     this.ui        = new UISystem(this);
     this.save      = new SaveSystem(this);
+    this.mobile    = new MobileControls(this);   // after player is created
     window.GAME    = this;
   }
 
@@ -118,6 +119,7 @@ class Game {
   newGame() {
     document.getElementById('main-menu').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
+    this.mobile.scaleHUD();
 
     this.dayNumber    = 1;
     this.survivalTime = 0;
@@ -327,6 +329,7 @@ class Game {
 
     this.terrain.loadChunksAround(cx, cz, CONFIG.RENDER_DISTANCE);
     this.terrain.update(dt);
+    if (this.mobile) this.mobile.update();
     this.player.update(dt);
     this.enemies.update(dt);
     this.environment.update(dt);

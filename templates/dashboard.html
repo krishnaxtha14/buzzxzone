@@ -19,8 +19,16 @@
   <!-- Main -->
   <div class="main-content">
     <h1 class="page-heading">WELCOME BACK, {{ username }}!</h1>
-    <p class="page-sub">PLAYER STATUS: 🟢 ONLINE &nbsp;·&nbsp;
-       BEST SCORE: <strong style="color:var(--green)">{{ progress.high_score }}</strong></p>
+    <p class="page-sub">
+      🟢 ONLINE &nbsp;·&nbsp; BEST SCORE:
+      <span class="score-badge">{{ progress.high_score }}</span>
+    </p>
+
+    <!-- Capybara Mascot -->
+    <div class="capybara-wrap">
+      <canvas id="capybara-canvas" width="160" height="100" title="Click me!"></canvas>
+      <div class="capybara-bubble" id="capy-bubble">Hello! I'm Capy 🌿</div>
+    </div>
 
     {% if locked_msg %}
       <p class="err" style="margin-bottom:18px;">{{ locked_msg }}</p>
@@ -84,4 +92,184 @@
     </div>
   </div>
 </div>
+
+{% block extra_scripts %}
+<script>
+/* ── Animated Capybara Mascot ─────────────────────────────── */
+(function() {
+  const canvas = document.getElementById('capybara-canvas');
+  if (!canvas) return;
+  const ctx    = canvas.getContext('2d');
+  const bubble = document.getElementById('capy-bubble');
+  let frame = 0;
+  let action = 'walk'; // walk | sit | eat | wave
+  let actionTimer = 0;
+  let legAnim = 0;
+
+  const MSGS = [
+    'Hello! I\'m Capy 🌿', 'Want to play? 🎮',
+    'I love berries! 🫐', 'Chop some trees! 🪵',
+    'Watch out for wolves! 🐺', 'Build a shelter! 🏠',
+    'Stay hydrated! 💧', 'I\'m so fluffy ✨',
+    'Adventure awaits! 🗺', '*happy capybara noises*'
+  ];
+  let msgIdx = 0;
+
+  function drawCapybara(x, y, scale, legPhase, act) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    const fur  = '#9a7420';
+    const dark = '#6b4a0e';
+    const lite = '#c0a050';
+    const nose = '#3d2208';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.beginPath();
+    ctx.ellipse(0, 38, 52, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.ellipse(-58, -4 + Math.sin(frame * 0.08) * 4, 9, 7, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = fur;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 52, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Belly patch
+    ctx.fillStyle = lite;
+    ctx.beginPath();
+    ctx.ellipse(0, 8, 32, 17, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4 Legs
+    const legColor = dark;
+    const legSwings = act === 'walk'
+      ? [Math.sin(legPhase), Math.sin(legPhase + Math.PI), Math.sin(legPhase + Math.PI), Math.sin(legPhase)]
+      : [0, 0, 0, act === 'wave' ? Math.sin(frame * 0.15) * 1.2 : 0];
+
+    [[-28, 10, -14], [18, 10, -14], [-28, 10, 14], [18, 10, 14]].forEach(([lx, _, lz], i) => {
+      const swing = legSwings[i] * (act === 'walk' ? 7 : 0);
+      ctx.save();
+      ctx.fillStyle = legColor;
+      ctx.beginPath();
+      // upper leg
+      ctx.roundRect(lx - 7, 22 - swing, 14, 18, 5);
+      ctx.fill();
+      // foot
+      ctx.fillStyle = '#4a3010';
+      ctx.beginPath();
+      ctx.ellipse(lx + 1, 42 - swing * 0.3, 10, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Head (with nod if eating)
+    const headNod = act === 'eat' ? Math.sin(frame * 0.12) * 8 : 0;
+    ctx.save();
+    ctx.translate(58, -8 + headNod);
+
+    // Head
+    ctx.fillStyle = fur;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 30, 24, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ears
+    ctx.fillStyle = dark;
+    [-14, 14].forEach(ez => {
+      ctx.beginPath();
+      ctx.ellipse(-4, -22, 10, 7, 0.3 * (ez > 0 ? 1 : -1), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c47040';
+      ctx.beginPath();
+      ctx.ellipse(-4, -22, 6, 4, 0.3 * (ez > 0 ? 1 : -1), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = dark;
+    });
+
+    // Snout
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.roundRect(18, -4, 22, 16, 5);
+    ctx.fill();
+
+    // Nostrils
+    ctx.fillStyle = nose;
+    [-4, 4].forEach(nz => {
+      ctx.beginPath();
+      ctx.ellipse(36, nz, 3.5, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-8, -9, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1a1008';
+    ctx.beginPath(); ctx.arc(-6, -8, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-4, -10, 2, 0, Math.PI * 2); ctx.fill();
+
+    // Eye blink
+    if (Math.floor(frame / 80) % 6 === 0 && (frame % 80) < 5) {
+      ctx.fillStyle = fur;
+      ctx.beginPath();
+      ctx.ellipse(-8, -9, 8, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Smile / expression
+    ctx.strokeStyle = '#3d2208';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(16, 4, 6, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    legAnim += 0.18;
+    actionTimer--;
+    if (actionTimer <= 0) {
+      const actions = ['walk', 'walk', 'walk', 'sit', 'eat', 'wave'];
+      action      = actions[Math.floor(Math.random() * actions.length)];
+      actionTimer = 80 + Math.floor(Math.random() * 120);
+    }
+
+    const legPhase = action === 'walk' ? legAnim : 0;
+    const bob      = action === 'walk' ? Math.sin(legAnim * 2) * 2 : 0;
+
+    drawCapybara(80, 54 + bob, 0.75, legPhase, action);
+    requestAnimationFrame(animate);
+  }
+
+  // Click to change message
+  canvas.addEventListener('click', () => {
+    msgIdx = (msgIdx + 1) % MSGS.length;
+    bubble.textContent = MSGS[msgIdx];
+    bubble.style.animation = 'none';
+    requestAnimationFrame(() => { bubble.style.animation = ''; });
+  });
+
+  // Change message every 5s
+  setInterval(() => {
+    msgIdx = (msgIdx + 1) % MSGS.length;
+    bubble.textContent = MSGS[msgIdx];
+  }, 5000);
+
+  animate();
+})();
+</script>
 {% endblock %}
+

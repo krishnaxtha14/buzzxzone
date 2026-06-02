@@ -26,10 +26,11 @@ class PlayerSystem {
 
     // Movement state
     this.keys = {};
-    this.velocity  = new THREE.Vector3();
-    this.onGround  = false;
-    this.isCrouching = false;
-    this.isSprinting = false;
+    this.mobileMode = false;  // set true by MobileControls
+    this.velocity   = new THREE.Vector3();
+    this.onGround   = false;
+    this.isCrouching  = false;
+    this.isSprinting  = false;
 
     // Gathering
     this.gatherProgress = 0;
@@ -237,7 +238,7 @@ class PlayerSystem {
   }
 
   _updateMovement(dt) {
-    if (!this.controls.isLocked) return;
+    if (!this.controls.isLocked && !this.mobileMode) return;
 
     this.isSprinting = this.keys['ShiftLeft'] && this.stamina > 5 && !this.isCrouching;
     this.isCrouching = this.keys['ControlLeft'] || this.keys['KeyC'];
