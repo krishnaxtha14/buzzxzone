@@ -171,7 +171,7 @@ class EnvironmentSystem {
     this._ambient.intensity       = Math.max(0.08, ambIntensity);
     this._sun.intensity           = Math.max(0, sunIntensity);
     this.game.scene.fog.color.copy(fogColor);
-    this.game.renderer.setClearColor(skyColor);
+    if (this.game.renderer) this.game.renderer.setClearColor(skyColor);
 
     // Sun color (warm at day, orange at sunrise/set)
     if (t >= 420 && t <= 1080) this._sun.color.setHex(0xfff5dd);

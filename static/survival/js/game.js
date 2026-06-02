@@ -46,6 +46,7 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+    this.renderer.setClearColor(0x87ceeb, 1);   // sky blue default
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
@@ -54,9 +55,11 @@ class Game {
   }
 
   _setupScene() {
-    this.scene  = new THREE.Scene();
+    this.scene     = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x87ceeb, 60, 200);
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+    this.camera    = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+    // Keep camera above ground during menu/load state
+    this.camera.position.set(0, 30, 0);
   }
 
   async _loadRecipes() {

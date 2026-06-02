@@ -83,24 +83,33 @@ class TerrainSystem {
     const size = CONFIG.CHUNK_SIZE;
     const seg  = size - 1;
 
+    // PlaneGeometry vertices span [-size/2, size/2] in local X and Z after rotation.
+    // We position the mesh at the chunk's world origin so that local + offset = world.
+    const offsetX = cx * size;
+    const offsetZ = cz * size;
+
     const geo = new THREE.PlaneGeometry(size, size, seg, seg);
     geo.rotateX(-Math.PI / 2);
     const pos    = geo.attributes.position;
     const colors = [];
 
     for (let i = 0; i < pos.count; i++) {
-      const wx = pos.getX(i) + cx * size;
-      const wz = pos.getZ(i) + cz * size;
+      // World coords = local vertex coords + chunk offset
+      const wx = pos.getX(i) + offsetX;
+      const wz = pos.getZ(i) + offsetZ;
       const h  = this.getHeight(wx, wz);
-      pos.setY(i, h);
+      pos.setY(i, h);   // local Y = height (mesh has no Y offset)
       const [r, g, b] = this._biomeColor(this.getBiome(h, wx, wz));
       colors.push(r, g, b);
     }
 
+    pos.needsUpdate = true;
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geo.computeVertexNormals();
 
     const mesh = new THREE.Mesh(geo, this.mats.terrain);
+    // CRITICAL: position mesh at chunk world origin so vertices land at correct world XZ
+    mesh.position.set(offsetX, 0, offsetZ);
     mesh.receiveShadow = true;
     this.scene.add(mesh);
 

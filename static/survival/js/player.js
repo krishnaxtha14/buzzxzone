@@ -10,11 +10,15 @@ class PlayerSystem {
     game.scene.add(this.controls.getObject());
     this.mouseSensitivity = CONFIG.MOUSE_SENSITIVITY;
 
-    // Override default sensitivity (PointerLockControls uses 0.002 internally)
-    // We'll handle mousemove manually for sensitivity control
-    this._yaw   = 0;
-    this._pitch = 0;
-    document.addEventListener('mousemove', e => this._onMouseMove(e));
+    // Replace PLControls' built-in 0.002 sensitivity with our configurable one.
+    // In r128 the listener is on domElement.ownerDocument.
+    const doc = document.body.ownerDocument;
+    if (this.controls.onMouseMove) {
+      doc.removeEventListener('mousemove', this.controls.onMouseMove, false);
+    }
+    this._onMouseMoveBound = e => this._onMouseMove(e);
+    doc.addEventListener('mousemove', this._onMouseMoveBound, false);
+
     this.controls.addEventListener('lock',   () => { document.getElementById('click-to-play').classList.add('hidden'); });
     this.controls.addEventListener('unlock', () => {
       if (game.state === 'playing') document.getElementById('click-to-play').classList.remove('hidden');
@@ -55,12 +59,12 @@ class PlayerSystem {
 
   _onMouseMove(e) {
     if (!this.controls.isLocked) return;
-    this._yaw   -= e.movementX * this.mouseSensitivity;
-    this._pitch -= e.movementY * this.mouseSensitivity;
-    this._pitch  = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, this._pitch));
-    const obj = this.controls.getObject();
-    obj.rotation.y    = this._yaw;
-    obj.children[0].rotation.x = this._pitch; // camera inside object
+    // In r128 PointerLockControls: getObject() = yawObject, yawObject.children[0] = pitchObject
+    const yawObj   = this.controls.getObject();
+    const pitchObj = yawObj.children[0];
+    yawObj.rotation.y   -= e.movementX * this.mouseSensitivity;
+    pitchObj.rotation.x -= e.movementY * this.mouseSensitivity;
+    pitchObj.rotation.x  = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitchObj.rotation.x));
   }
 
   onKeyDown(e) { this.keys[e.code] = true; }
@@ -76,7 +80,9 @@ class PlayerSystem {
     this.alive   = true;
     this.velocity.set(0, 0, 0);
     this.controls.getObject().position.copy(pos);
-    this._yaw = 0; this._pitch = 0;
+    // Reset camera orientation
+    this.controls.getObject().rotation.y = 0;
+    if (this.controls.getObject().children[0]) this.controls.getObject().children[0].rotation.x = 0;
     this.gatherTarget = null;
     this.gatherProgress = 0;
     this.isGathering = false;
@@ -295,8 +301,7 @@ class PlayerSystem {
       this.onGround = false;
     }
 
-    // Left-click = attack/gather while held
-    if (this.keys['MouseLeft']) this.meleeAttack();
+    // Left-click = single attack per press (handled via mousedown listener)
   }
 
   _updateStats(dt) {
@@ -400,15 +405,16 @@ class PlayerSystem {
   }
 }
 
-// Track mouse button state
+// Left-click = single attack; hold = continuous gather
 document.addEventListener('mousedown', e => {
-  if (e.button === 0 && window.GAME?.state === 'playing') window.GAME.player.keys['MouseLeft'] = true;
+  if (e.button === 0 && window.GAME?.state === 'playing' && window.GAME.player.controls.isLocked) {
+    window.GAME.player.meleeAttack();
+    window.GAME.player.keys['MouseLeft'] = true;
+  }
 });
 document.addEventListener('mouseup', e => {
-  if (e.button === 0) {
-    if (window.GAME?.player) {
-      window.GAME.player.keys['MouseLeft'] = false;
-      if (window.GAME.player.isGathering) window.GAME.player._cancelGather();
-    }
+  if (e.button === 0 && window.GAME?.player) {
+    window.GAME.player.keys['MouseLeft'] = false;
+    if (window.GAME.player.isGathering) window.GAME.player._cancelGather();
   }
 });

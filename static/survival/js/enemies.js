@@ -101,6 +101,7 @@ class Enemy {
   _buildHealthBar() {
     const el  = document.createElement('div');
     el.className = 'enemy-hpbar';
+    el.style.display = 'none';
     el.innerHTML = `<div class="enemy-hpbar-fill" style="width:100%"></div>`;
     document.body.appendChild(el);
     this._healthBarEl = el;
