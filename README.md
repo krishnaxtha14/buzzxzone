@@ -1,67 +1,122 @@
-# 🌿 Cyber — Eco Learning Quiz Hub
+# 🌿 buzzXzone — Eco Learning Hub
 
-A Flask web app featuring **cyber**: an eco-themed learning hub for ages 6-12 with
-an auto-playing snake quiz, a math quiz, an eco-friendly cyber-security quiz, and
-an unlockable memory-match mini-game.
+A full-stack Flask web app deployed on **Vercel** with a **Supabase PostgreSQL** backend.  
+An eco-themed learning hub featuring quiz games, a memory-match mini-game, animated visuals, and a capybara mascot.
+
+Live: **[buzzxzone.vercel.app](https://buzzxzone.vercel.app)**
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| 🐍 **Eco Snake Quiz** | Auto-playing snake — answer correctly to grow it, wrong to shrink it |
+| 🧮 **Math Quiz** | Easy / Medium / Hard difficulty tiers |
+| 🛡️ **Eco Cyber Quiz** | Eco-friendly cyber-security questions across three difficulty tiers |
+| 🧩 **Memory Match** | Locked by default — unlocks at 100 points |
+| ✨ **Neon Mouse Trail** | Glowing animated cursor trail on every page |
+| 🐾 **Capybara Mascot** | Animated Capy on the dashboard — click to get messages |
+| 🌿 **Forest Theme** | Dark-green vibrant UI with animated cards and floating nature symbols |
+| 🔐 **OTP Auth** | Email-verified login via Gmail SMTP |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python 3 · Flask |
+| Database | PostgreSQL (Supabase) via `psycopg2` |
+| Frontend | HTML5 · CSS3 · Vanilla JavaScript · Canvas 2D |
+| Auth | Session-based + 6-digit OTP via Gmail SMTP |
+| Deployment | Vercel (serverless) |
 
 ---
 
 ## Project Structure
 
 ```
-pooki/
+buzzxzone/
 │
-├── app.py                          ← Flask routes, SQLite, scoring, OTP email
-├── cyber.db                        ← SQLite database (auto-created on first run)
+├── app.py                        ← Flask routes, DB, scoring, OTP email, health check
+├── vercel.json                   ← Vercel deployment config
+├── requirements.txt              ← Python dependencies
 │
-├── questions/                      ← All question banks (separate JSON files)
+├── questions/                    ← Question banks (JSON)
+│   ├── snake.json
 │   ├── math_easy.json
 │   ├── math_medium.json
 │   ├── math_hard.json
 │   ├── cyber_easy.json
 │   ├── cyber_medium.json
-│   ├── cyber_hard.json
-│   └── snake.json
+│   └── cyber_hard.json
 │
 ├── static/
-│   ├── style.css                   ← All visual styles
-│   ├── game.js                     ← Auto-play snake engine
-│   └── quiz.js                     ← Shared quiz engine (math + cyber)
+│   ├── style.css                 ← Global styles, forest theme, capybara, animations
+│   ├── logo.svg                  ← App logo
+│   ├── game.js                   ← Auto-play snake engine
+│   └── quiz.js                   ← Shared quiz engine (math + cyber)
 │
 └── templates/
-    ├── base.html                   ← Shared layout (leaf background)
-    ├── login.html / register.html / verify.html
-    ├── forgot.html / reset_verify.html / new_password.html
-    ├── dashboard.html              ← Game hub (4 cards, memory locked by default)
-    ├── snake.html                  ← Auto-play snake page
-    ├── difficulty.html             ← Easy / Medium / Hard picker (math + cyber)
-    ├── quiz.html                   ← Generic quiz page (math + cyber)
-    └── memory.html                 ← Memory Match (only reachable when unlocked)
+    ├── base.html                 ← Shared layout: neon trail, spark effects, audio
+    ├── dashboard.html            ← Game hub with capybara mascot + animated cards
+    ├── snake.html                ← Eco Snake Quiz page
+    ├── difficulty.html           ← Difficulty picker (math + cyber)
+    ├── quiz.html                 ← Generic quiz page
+    ├── memory.html               ← Memory Match (unlockable)
+    ├── login.html                ← Login with OTP
+    ├── register.html
+    ├── verify.html               ← OTP verification
+    ├── forgot.html
+    ├── reset_verify.html
+    └── new_password.html
 ```
 
 ---
 
-## How to Run
+## Local Development
 
-### 1. Install dependencies
+### 1. Clone the repo
 
 ```bash
-pip install flask werkzeug
+git clone https://github.com/krishnaxtha14/buzzxzone.git
+cd buzzxzone
 ```
 
-### 2. Storage
+### 2. Install dependencies
 
-pooki uses **SQLite** (`pooki.db`) — Python's built-in `sqlite3` module. No external
-database server, no schema setup, no credentials. The DB file is created
-automatically on first run.
+```bash
+pip install -r requirements.txt
+```
 
-### 3. (Optional) Email credentials
+`requirements.txt` contains:
+```
+flask>=3.0.0
+werkzeug>=3.0.0
+psycopg2-binary>=2.9.0
+python-dotenv>=1.0.0
+```
 
-If you want OTP emails to send, edit `send_otp_email()` in `app.py` with your own
-Gmail address and app password. If email isn't configured, the OTP is printed to
-the server console so you can still log in.
+### 3. Set environment variables
 
-### 4. Start the server
+Create a `.env` file in the project root:
+
+```env
+# Supabase PostgreSQL connection string
+DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+
+# Flask session secret (any random string)
+FLASK_SECRET_KEY=your-secret-key-here
+
+# Gmail SMTP for OTP emails (optional for local dev)
+GMAIL_USER=your-email@gmail.com
+GMAIL_PASSWORD=your-app-password
+```
+
+> **Note:** OTP emails are optional locally. If Gmail isn't configured, the OTP is printed to the server console instead.
+
+### 4. Run locally
 
 ```bash
 python app.py
@@ -71,93 +126,166 @@ Visit `http://localhost:5000`
 
 ---
 
-## Game Features
+## Vercel Deployment
 
-### 🐍 Auto-Play Eco Snake Quiz
-The snake is **not controlled by the player** — it slithers around on its own and
-the player only answers the question on screen.
+This project is configured for Vercel serverless deployment via `vercel.json`.
 
-| Feature | Detail |
-|---|---|
-| Mode               | Fully auto-play animation — no keyboard controls |
-| Timer              | **1 minute per question** (hard cap) |
-| Correct answer     | Snake **grows** by 1 segment, **+10 points** |
-| Wrong / time-out   | Snake **shrinks** by 1 segment |
-| Game over          | Snake shrinks below its minimum length |
-| Question pool      | `questions/snake.json` (eco-themed maths, shuffled each game) |
+### Environment Variables (set in Vercel dashboard)
 
-### 🧮 Math Quiz (Easy / Medium / Hard)
-Player picks a difficulty, then answers a randomised pool from that tier.
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | ✅ Yes | Full Supabase connection string (pooler, port 6543) |
+| `FLASK_SECRET_KEY` | ✅ Yes | Session signing key |
+| `GMAIL_USER` | Optional | Gmail address for OTP sending |
+| `GMAIL_PASSWORD` | Optional | Gmail app password |
 
-- Easy: single-digit add/sub, simple multiplication
-- Medium: two-digit arithmetic, multiplication tables, division
-- Hard: BIDMAS, fractions, percentages, powers, simple algebra
-- **1 minute per question**, **10 points per correct answer**
-- Question banks: `questions/math_easy.json`, `math_medium.json`, `math_hard.json`
+### Check if the database is connected
 
-### 🛡️ Eco-Friendly Cyber-Security Quiz (Easy / Medium / Hard)
-Cyber-security questions framed around eco-friendly digital habits (saving energy,
-recycling old devices safely, spotting fake "green deal" scams, etc.)
+After deployment, visit:
 
-- Easy: phishing basics, password basics, safe device habits
-- Medium: 2FA, fake eco-deals, HTTPS, e-waste data wiping
-- Hard: social engineering, supply-chain attacks, ransomware, encryption
-- **1 minute per question**, **10 points per correct answer**
-- Question banks: `questions/cyber_easy.json`, `cyber_medium.json`, `cyber_hard.json`
+```
+https://buzzxzone.vercel.app/health
+```
 
-### 🧩 Memory Match — 🔒 LOCKED by default
-The memory-match mini-game is locked when a new player logs in.
+Expected response when healthy:
+```json
+{"status": "ok", "database": "connected"}
+```
 
-- **Unlocks** once the player's highest score reaches **100 points**
-  (configurable via `UNLOCK_THRESHOLD` in `app.py`)
-- The dashboard shows a 🔒 card with a progress bar toward the unlock
-- Once unlocked: 4×4 grid of 16 cards (8 emoji pairs), with moves + time tracking
+If it returns an error, check that `DATABASE_URL` is set correctly in the Vercel dashboard and uses `sslmode=require`.
+
+### Supabase Setup
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to **Project Settings → Database → Connection Pooling**
+3. Copy the **Transaction pooler** connection string (port 6543)
+4. Set it as `DATABASE_URL` in Vercel
+
+The `users` table is created automatically on first startup:
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id              SERIAL PRIMARY KEY,
+    username        TEXT NOT NULL,
+    email           TEXT NOT NULL UNIQUE,
+    password        TEXT NOT NULL,
+    high_score      INTEGER NOT NULL DEFAULT 0,
+    memory_unlocked INTEGER NOT NULL DEFAULT 0
+);
+```
 
 ---
 
-## Adding / Editing Questions
+## Games
 
-Every question lives in its own JSON file under `questions/`. The format is:
+### 🐍 Eco Snake Quiz
+
+The snake plays **automatically** — no player controls. Answer questions to influence it.
+
+| Event | Result |
+|---|---|
+| Correct answer | Snake grows (+1 segment) · **+10 points** |
+| Wrong / timeout | Snake shrinks (−1 segment) |
+| Snake too short | Game over |
+| Timer per question | **20 seconds** |
+
+### 🧮 Math Quiz
+
+Three difficulty tiers, 10 pts per correct answer, 20-second timer per question.
+
+- **Easy** — single-digit arithmetic, simple multiplication
+- **Medium** — two-digit arithmetic, tables, division
+- **Hard** — BIDMAS, fractions, percentages, algebra
+
+### 🛡️ Eco Cyber-Security Quiz
+
+Cyber-security questions framed around eco-digital habits.
+
+- **Easy** — phishing basics, password safety, device hygiene
+- **Medium** — 2FA, fake eco-deals, HTTPS, e-waste
+- **Hard** — social engineering, ransomware, encryption, supply-chain attacks
+
+### 🧩 Memory Match
+
+- Locked until the player's **highest score reaches 100 points**
+- 4×4 grid of 16 cards (8 emoji pairs)
+- Shows a progress bar on the locked card
+- Configurable via `UNLOCK_THRESHOLD` in `app.py`
+
+---
+
+## Question Format
+
+All questions live in `questions/*.json`:
 
 ```json
 [
   {
-    "q": "What is 7 + 5?",
-    "answers": ["10", "11", "12", "13"],
-    "correct": 2
+    "q": "What does HTTPS stand for?",
+    "answers": ["HyperText Transfer Protocol Secure", "High Tech Phishing System", "Hyper Transfer Protocol Standard", "HyperText Testing Protocol Suite"],
+    "correct": 0
   }
 ]
 ```
 
-- `answers` must be exactly **4** strings
-- `correct` is the **0-indexed** position of the right answer (0 = first)
-- Add as many questions per file as you like — they're shuffled per session
+| Field | Type | Description |
+|---|---|---|
+| `q` | string | The question text |
+| `answers` | array[4] | Exactly 4 answer choices |
+| `correct` | integer | 0-indexed position of the correct answer |
+
+Questions are shuffled on every new session.
 
 ---
 
-## Key Constants (in `app.py`)
+## Key Constants (`app.py`)
 
-| Constant            | Default | Meaning |
-|---------------------|---------|---------|
-| `QUESTION_TIME_SEC` | `60`    | Seconds allowed per question (hard cap) |
-| `POINTS_PER_Q`      | `10`    | Points awarded per correct answer |
-| `UNLOCK_THRESHOLD`  | `100`   | High score needed to unlock Memory Match |
+| Constant | Default | Description |
+|---|---|---|
+| `QUESTION_TIME_SEC` | `20` | Seconds allowed per question |
+| `POINTS_PER_Q` | `10` | Points per correct answer |
+| `UNLOCK_THRESHOLD` | `100` | Score needed to unlock Memory Match |
 
 ---
 
-## File Responsibilities
+## Visual Features
 
-| File | Owns |
-|---|---|
-| `app.py`                  | Routes, SQLite, question loading, scoring, OTP, unlock logic |
-| `questions/*.json`        | All question banks (math/cyber easy-medium-hard, snake) |
-| `static/style.css`        | CSS variables, layout, card/button styles, locked-card + difficulty UI |
-| `static/game.js`          | Auto-play snake engine, per-question 1-min timer, grow/shrink logic |
-| `static/quiz.js`          | Shared math/cyber quiz engine, timer, score submission |
-| `templates/base.html`     | Shared layout, leaf background |
-| `templates/dashboard.html`| Game hub (4 cards, memory locked card with progress bar) |
-| `templates/snake.html`    | Snake canvas + HUD, injects `QUESTIONS` JSON |
-| `templates/difficulty.html` | Easy/Medium/Hard picker (used by both math and cyber) |
-| `templates/quiz.html`     | Generic quiz page used by math + cyber |
-| `templates/memory.html`   | Memory board (only reachable when unlocked) |
-| Auth templates            | login, register, verify, forgot, reset_verify, new_password |
+### Neon Mouse Trail
+Every page has an animated neon glow trail that follows the cursor:
+- Glowing particles cycle through greens, cyans, and golds
+- Connected line with shadow blur and colour-coded inner/outer rings
+- Pulsing cursor dot with custom ring
+
+### Spark Click Effect
+Clicking or tapping anywhere spawns an explosion of neon sparks.
+
+### Capybara Mascot
+The dashboard features **Capy**, an animated 2D canvas capybara:
+- Walking, sitting, eating, and waving animations
+- Ear twitches, eye blinks, tail wag
+- Click to cycle through 10 messages
+- Message auto-cycles every 5 seconds
+
+### Animated Cards
+Dashboard game cards have:
+- Staggered entrance animations
+- Bouncing icon on idle
+- Glowing top-bar reveal on hover
+
+---
+
+## Authentication Flow
+
+```
+Register → Login (email + password) → OTP email sent → Verify OTP → Dashboard
+                                                            ↑
+                                              (printed to console if email not set)
+```
+
+Password reset follows the same OTP flow via `Forgot Password`.
+
+---
+
+## License
+
+MIT — free to use, modify, and deploy.
