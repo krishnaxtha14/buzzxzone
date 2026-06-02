@@ -12,7 +12,6 @@
     <a href="/games/math">🧮 Math Quiz</a>
     <a href="/games/cyber">🛡️ Cyber Quiz</a>
     <a href="/games/memory">🧩 Memory Match {% if not progress.memory_unlocked %}🔒{% endif %}</a>
-    <a href="/games/survival">🌲 Survival Craft</a>
     <a href="/logout" class="logout">⏻ Logout</a>
   </nav>
 
@@ -60,14 +59,6 @@
         <p>Stay safe online AND save the planet. Easy / Medium / Hard.
            20 sec per question · 10 pts each.</p>
         <a href="/games/cyber" class="play-btn play-yellow">PLAY NOW →</a>
-      </div>
-
-      <!-- Survival Craft -->
-      <div class="game-card">
-        <div class="icon">🌲</div>
-        <h3>SURVIVAL CRAFT</h3>
-        <p>Open-world 3D survival. Gather resources, craft tools, build shelter, and fight enemies to stay alive.</p>
-        <a href="/games/survival" class="play-btn play-green">PLAY NOW →</a>
       </div>
 
       {% if progress.memory_unlocked %}

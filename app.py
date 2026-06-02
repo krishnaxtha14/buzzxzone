@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 import random
 import os
 import json
-import sqlite3
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
@@ -384,13 +383,6 @@ def play_quiz(category, difficulty):
     )
 
 
-@app.route("/games/survival")
-def survival():
-    if "user_id" not in session:
-        return redirect("/login")
-    return render_template("survival.html", username=session.get("username", "PLAYER"))
-
-
 @app.route("/games/memory")
 def memory():
     if "user_id" not in session:
@@ -408,78 +400,6 @@ def memory():
 # ─────────────────────────────────────────────
 # SCORE SUBMISSION
 # ─────────────────────────────────────────────
-# ─────────────────────────────────────────────
-# SURVIVAL GAME — SQLite save/load
-# ─────────────────────────────────────────────
-SURVIVAL_DB = os.path.join(BASE_DIR, "survival.db")
-
-
-def get_survival_db():
-    conn = sqlite3.connect(SURVIVAL_DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_survival_db():
-    conn = get_survival_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS survival_saves (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id    INTEGER NOT NULL UNIQUE,
-            data       TEXT    NOT NULL,
-            saved_at   TEXT    NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-try:
-    init_survival_db()
-except Exception as _se:
-    print("[survival] init_survival_db warning:", _se)
-
-
-@app.route("/api/survival/save", methods=["POST"])
-def survival_save():
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "not_logged_in"}), 401
-    try:
-        payload  = request.get_json(silent=True) or {}
-        saved_at = payload.get("savedAt", datetime.now().isoformat())
-        conn     = get_survival_db()
-        conn.execute("""
-            INSERT INTO survival_saves (user_id, data, saved_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET data=excluded.data, saved_at=excluded.saved_at
-        """, (session["user_id"], json.dumps(payload), saved_at))
-        conn.commit()
-        conn.close()
-        return jsonify({"ok": True})
-    except Exception as e:
-        print("[survival] save error:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/survival/load")
-def survival_load():
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "not_logged_in"}), 401
-    try:
-        conn = get_survival_db()
-        row  = conn.execute(
-            "SELECT data FROM survival_saves WHERE user_id = ?",
-            (session["user_id"],)
-        ).fetchone()
-        conn.close()
-        if row:
-            return jsonify({"ok": True, "data": json.loads(row["data"])})
-        return jsonify({"ok": False, "data": None})
-    except Exception as e:
-        print("[survival] load error:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
     if "user_id" not in session:
