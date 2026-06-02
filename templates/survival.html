@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Survival Craft</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='survival/game.css') }}">
+</head>
+<body>
+<div id="game-root">
+
+  <!-- Loading -->
+  <div id="loading-screen">
+    <div class="loading-inner">
+      <h1 class="title-text">SURVIVAL CRAFT</h1>
+      <div class="loading-bar-wrap"><div id="loading-progress" class="loading-bar-fill"></div></div>
+      <p id="loading-text">Initializing...</p>
+    </div>
+  </div>
+
+  <!-- Main Menu -->
+  <div id="main-menu" class="menu-overlay hidden">
+    <div class="menu-box">
+      <h1 class="menu-title">SURVIVAL CRAFT</h1>
+      <p class="menu-subtitle">Welcome, <strong>{{ username }}</strong></p>
+      <button class="menu-btn" id="btn-new-game">▶ NEW GAME</button>
+      <button class="menu-btn" id="btn-load-game">📂 LOAD GAME</button>
+      <button class="menu-btn" id="btn-settings">⚙ SETTINGS</button>
+      <a class="menu-btn menu-btn-secondary" href="/dashboard">← BACK TO HUB</a>
+    </div>
+  </div>
+
+  <!-- Pause Menu -->
+  <div id="pause-menu" class="menu-overlay hidden">
+    <div class="menu-box">
+      <h2 class="menu-title">PAUSED</h2>
+      <button class="menu-btn" id="btn-resume">▶ RESUME</button>
+      <button class="menu-btn" id="btn-save">💾 SAVE GAME</button>
+      <button class="menu-btn" id="btn-settings-pause">⚙ SETTINGS</button>
+      <a class="menu-btn menu-btn-secondary" href="/dashboard">⚡ QUIT TO HUB</a>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings-menu" class="menu-overlay hidden">
+    <div class="menu-box settings-box">
+      <h2 class="menu-title">SETTINGS</h2>
+      <div class="setting-row">
+        <label>Mouse Sensitivity</label>
+        <div class="slider-wrap">
+          <input type="range" id="sensitivity-slider" min="0.0005" max="0.008" step="0.0005" value="0.002">
+          <span id="sensitivity-val">0.002</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>Render Distance</label>
+        <select id="render-distance">
+          <option value="2">Low (2)</option>
+          <option value="3" selected>Medium (3)</option>
+          <option value="4">High (4)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Volume</label>
+        <div class="slider-wrap">
+          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.6">
+          <span id="volume-val">0.6</span>
+        </div>
+      </div>
+      <button class="menu-btn" id="btn-settings-back">← BACK</button>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Click-to-play overlay -->
+  <div id="click-to-play" class="hidden">
+    <div class="click-inner">
+      <p>Click anywhere to capture mouse</p>
+      <small>ESC = Pause · I = Inventory · C = Craft · B = Build · E = Gather</small>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <!-- Stat bars -->
+    <div id="stat-bars">
+      <div class="stat-row">
+        <span class="stat-lbl">❤</span>
+        <div class="bar-track"><div id="bar-health" class="bar-fill bar-health"></div></div>
+        <span id="txt-health" class="stat-num">100</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">🍖</span>
+        <div class="bar-track"><div id="bar-hunger" class="bar-fill bar-hunger"></div></div>
+        <span id="txt-hunger" class="stat-num">100</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">💧</span>
+        <div class="bar-track"><div id="bar-thirst" class="bar-fill bar-thirst"></div></div>
+        <span id="txt-thirst" class="stat-num">100</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">⚡</span>
+        <div class="bar-track"><div id="bar-stamina" class="bar-fill bar-stamina"></div></div>
+        <span id="txt-stamina" class="stat-num">100</span>
+      </div>
+    </div>
+
+    <!-- Top right: time + xp -->
+    <div id="hud-top-right">
+      <div id="time-display">☀ Day 1 · 06:00</div>
+      <div id="level-display">LVL 1</div>
+      <div class="bar-track xp-track"><div id="bar-xp" class="bar-fill bar-xp"></div></div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap-wrap">
+      <canvas id="minimap-canvas" width="130" height="130"></canvas>
+      <div class="minimap-label">MAP</div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair"></div>
+
+    <!-- Action prompt -->
+    <div id="action-prompt" class="hidden">
+      <div id="action-bar-track"><div id="action-bar-fill"></div></div>
+      <div id="action-text">Hold [E] to gather</div>
+    </div>
+
+    <!-- Hotbar -->
+    <div id="hotbar"></div>
+
+    <!-- Debug -->
+    <div id="debug-info">
+      <span id="pos-display">0, 0, 0</span>
+      <span id="fps-display">60 FPS</span>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notif-container"></div>
+
+    <!-- Death screen -->
+    <div id="death-screen" class="hidden">
+      <div class="death-box">
+        <h2>☠ YOU DIED</h2>
+        <p>Survived: <strong id="death-time">0:00</strong></p>
+        <p id="death-cause">You succumbed to the wilderness.</p>
+        <button class="menu-btn" id="btn-respawn">♻ RESPAWN</button>
+        <a class="menu-btn menu-btn-secondary" href="/dashboard">← TO HUB</a>
+      </div>
+    </div>
+  </div><!-- /hud -->
+
+  <!-- Inventory Panel -->
+  <div id="inventory-panel" class="panel hidden">
+    <div class="panel-hdr">
+      <span>⚔ INVENTORY</span>
+      <button class="close-btn" id="btn-close-inv">✕</button>
+    </div>
+    <div class="inv-body">
+      <div id="inv-grid"></div>
+      <div id="equip-slots">
+        <div class="equip-label">EQUIPMENT</div>
+        <div class="equip-row">
+          <div class="inv-slot equip-slot" id="equip-weapon" data-source="equip-weapon" data-index="0" title="Weapon">⚔</div>
+          <div class="inv-slot equip-slot" id="equip-head"   data-source="equip-head"   data-index="0" title="Head">🪖</div>
+        </div>
+        <div class="equip-row">
+          <div class="inv-slot equip-slot" id="equip-chest"  data-source="equip-chest"  data-index="0" title="Chest">👕</div>
+          <div class="inv-slot equip-slot" id="equip-legs"   data-source="equip-legs"   data-index="0" title="Legs">👖</div>
+        </div>
+        <div class="equip-row">
+          <div class="inv-slot equip-slot" id="equip-feet"   data-source="equip-feet"   data-index="0" title="Feet">👟</div>
+        </div>
+        <div class="equip-stats">
+          <div>Weight: <span id="inv-weight">0</span>/50</div>
+          <div>Items: <span id="inv-count">0</span>/30</div>
+        </div>
+      </div>
+    </div>
+    <div class="inv-hotbar-label">HOTBAR</div>
+    <div id="inv-hotbar"></div>
+  </div>
+
+  <!-- Crafting Panel -->
+  <div id="crafting-panel" class="panel hidden">
+    <div class="panel-hdr">
+      <span>🔧 CRAFTING</span>
+      <button class="close-btn" id="btn-close-craft">✕</button>
+    </div>
+    <div class="craft-body">
+      <div id="craft-categories">
+        <button class="cat-btn active" data-cat="all">All</button>
+        <button class="cat-btn" data-cat="tools">Tools</button>
+        <button class="cat-btn" data-cat="weapons">Weapons</button>
+        <button class="cat-btn" data-cat="building">Building</button>
+        <button class="cat-btn" data-cat="food">Food</button>
+        <button class="cat-btn" data-cat="materials">Materials</button>
+        <button class="cat-btn" data-cat="survival">Survival</button>
+        <button class="cat-btn" data-cat="medical">Medical</button>
+      </div>
+      <div id="craft-list"></div>
+      <div id="craft-detail">
+        <div id="craft-detail-icon">🔧</div>
+        <div id="craft-detail-name">Select a recipe</div>
+        <div id="craft-detail-desc"></div>
+        <div id="craft-ingredients"></div>
+        <button id="btn-craft" class="craft-btn" disabled>CRAFT</button>
+        <div id="craft-qty-row">
+          <label>Qty:</label>
+          <button class="qty-btn" id="craft-qty-dec">−</button>
+          <span id="craft-qty">1</span>
+          <button class="qty-btn" id="craft-qty-inc">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Building Panel -->
+  <div id="building-panel" class="panel hidden">
+    <div class="panel-hdr">
+      <span>🏠 BUILDING</span>
+      <button class="close-btn" id="btn-close-build">✕</button>
+    </div>
+    <div id="build-items">
+      <div class="build-item" data-type="wooden_floor">
+        <span>🟫</span><div><b>Floor</b><small>2 Wood</small></div>
+      </div>
+      <div class="build-item" data-type="wooden_wall">
+        <span>🧱</span><div><b>Wall</b><small>3 Wood</small></div>
+      </div>
+      <div class="build-item" data-type="wooden_door">
+        <span>🚪</span><div><b>Door</b><small>4 Wood</small></div>
+      </div>
+      <div class="build-item" data-type="campfire">
+        <span>🔥</span><div><b>Campfire</b><small>5W + 3S</small></div>
+      </div>
+      <div class="build-item" data-type="workbench">
+        <span>🔧</span><div><b>Workbench</b><small>8 Wood</small></div>
+      </div>
+      <div class="build-item" data-type="storage_chest">
+        <span>📦</span><div><b>Chest</b><small>6 Wood</small></div>
+      </div>
+      <div class="build-item build-cancel" data-type="cancel">
+        <span>✕</span><div><b>Cancel</b><small>Stop placing</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="item-tooltip" class="hidden"></div>
+
+</div><!-- /game-root -->
+
+<!-- Three.js r128 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+<!-- Pass username to JS -->
+<script>const USERNAME = {{ username | tojson }};</script>
+
+<!-- Game modules (order matters) -->
+<script src="{{ url_for('static', filename='survival/js/config.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/noise.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/audio.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/terrain.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/player.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/inventory.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/crafting.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/building.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/enemies.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/environment.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/ui.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/save.js') }}"></script>
+<script src="{{ url_for('static', filename='survival/js/game.js') }}"></script>
+</body>
+</html>
