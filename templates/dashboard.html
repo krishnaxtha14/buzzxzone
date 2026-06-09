@@ -12,6 +12,7 @@
     <a href="/games/math">🧮 Math Quiz</a>
     <a href="/games/cyber">🛡️ Cyber Quiz</a>
     <a href="/games/memory">🧩 Memory Match {% if not progress.memory_unlocked %}🔒{% endif %}</a>
+    <a href="/games/godot">🎮 Cyber Game</a>
     <a href="/logout" class="logout">⏻ Logout</a>
   </nav>
 
@@ -59,6 +60,14 @@
         <p>Stay safe online AND save the planet. Easy / Medium / Hard.
            20 sec per question · 10 pts each.</p>
         <a href="/games/cyber" class="play-btn play-yellow">PLAY NOW →</a>
+      </div>
+
+      <!-- Godot Cybersecurity Game -->
+      <div class="game-card">
+        <div class="icon">🎮</div>
+        <h3>CYBER GAME</h3>
+        <p>An interactive educational cybersecurity game built with Godot. Play directly in your browser!</p>
+        <a href="/games/godot" class="play-btn play-green">PLAY NOW →</a>
       </div>
 
       {% if progress.memory_unlocked %}
