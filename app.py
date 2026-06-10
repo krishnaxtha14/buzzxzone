@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, redirect, request, session, jsonify, send_from_directory
+from flask import Flask, render_template, redirect, request, session, jsonify
 import psycopg2
 import psycopg2.extras
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -449,30 +449,6 @@ def api_progress():
     if "user_id" not in session:
         return jsonify({"ok": False}), 401
     return jsonify({"ok": True, **get_user_progress(session["user_id"])})
-
-
-# ─────────────────────────────────────────────
-# GODOT GAME — needs COOP/COEP headers for WebAssembly
-# ─────────────────────────────────────────────
-@app.route("/games/godot")
-def godot_game():
-    if "user_id" not in session:
-        return redirect("/login")
-    response = send_from_directory(
-        os.path.join(BASE_DIR, "static", "godot"),
-        "Educational cybersecurity game.html",
-    )
-    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-    return response
-
-
-@app.after_request
-def add_godot_headers(response):
-    if request.path.startswith("/static/godot/"):
-        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-    return response
 
 
 # ─────────────────────────────────────────────
