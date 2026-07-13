@@ -110,8 +110,11 @@ function initColorBends(canvas, opts = {}) {
   frame();
 }
 
-/* ── Silk: soft flowing fabric-like noise, rendered at low-res and
-   upscaled (the blur from upscaling is what gives it a silky softness). ── */
+/* ── Silk: 1:1 port of reactbits.dev's Silk component fragment shader
+   (originally a Three.js/GLSL shader — ported line-for-line to JS/canvas
+   since this app has no WebGL build pipeline). Rendered at a reduced
+   buffer size and upscaled for performance; the upscale blur also happens
+   to read as "silk" softness, matching the original's look. ── */
 function initSilk(canvas, opts = {}) {
   const cfg = Object.assign({
     color: '#7B7481', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
@@ -119,48 +122,70 @@ function initSilk(canvas, opts = {}) {
 
   const { r, g, b } = hexToRgb(cfg.color);
   const ctx = canvas.getContext('2d');
-  const BUF = 96;
+  const BUF = 160;
   const buf = document.createElement('canvas');
   buf.width = BUF; buf.height = BUF;
   const bctx = buf.getContext('2d');
   const img = bctx.createImageData(BUF, BUF);
-  let t = 0;
+  const E = Math.E;
+  const rotSin = Math.sin(cfg.rotation);
+  const rotCos = Math.cos(cfg.rotation);
+  let uTime = 0, lastTs = 0;
 
   function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
   resize();
   window.addEventListener('resize', resize);
 
-  function frame() {
-    const freq = 0.12 * cfg.scale;
+  // noise(texCoord) — GLSL: fract(r.x*r.y*(1+texCoord.x)) where r = e*sin(e*texCoord)
+  function noise2(px, py) {
+    const rx = E * Math.sin(E * px);
+    const ry = E * Math.sin(E * py);
+    const v = rx * ry * (1 + px);
+    return v - Math.floor(v);
+  }
+
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    const delta = (ts - lastTs) / 1000;
+    lastTs = ts;
+    uTime += 0.1 * delta;
+    const tOffset = cfg.speed * uTime;
+
     const d = img.data;
-    for (let y = 0; y < BUF; y++) {
-      for (let x = 0; x < BUF; x++) {
-        const i = (y * BUF + x) * 4;
-        const n =
-          Math.sin(x * freq + t) * 0.5 +
-          Math.sin(y * freq * 1.3 - t * 0.8) * 0.5 +
-          Math.sin((x + y) * freq * 0.7 + t * 1.4) * 0.4 * cfg.noiseIntensity;
-        const v = 0.5 + n * 0.28;
-        d[i]     = r; d[i + 1] = g; d[i + 2] = b;
-        d[i + 3] = Math.max(0, Math.min(255, v * 150));
+    for (let py = 0; py < BUF; py++) {
+      const vUvY = py / BUF;
+      for (let px = 0; px < BUF; px++) {
+        const vUvX = px / BUF;
+        // uv = rotate(vUv * scale, rotation); tex = uv * scale
+        let ux = vUvX * cfg.scale, uy = vUvY * cfg.scale;
+        const rux = ux * rotCos - uy * rotSin;
+        const ruy = ux * rotSin + uy * rotCos;
+        let tx = rux * cfg.scale, ty = ruy * cfg.scale;
+        ty += 0.03 * Math.sin(8.0 * tx - tOffset);
+
+        const pattern = 0.6 + 0.4 * Math.sin(
+          5.0 * (tx + ty + Math.cos(3.0 * tx + 5.0 * ty) + 0.02 * tOffset) +
+          Math.sin(20.0 * (tx + ty - 0.1 * tOffset))
+        );
+        const rnd = noise2(px, py); // gl_FragCoord.xy — screen-space pixel coords
+        const shade = pattern - (rnd / 15) * cfg.noiseIntensity;
+
+        const i = (py * BUF + px) * 4;
+        d[i]     = Math.max(0, Math.min(255, r * shade));
+        d[i + 1] = Math.max(0, Math.min(255, g * shade));
+        d[i + 2] = Math.max(0, Math.min(255, b * shade));
+        d[i + 3] = 255;
       }
     }
     bctx.putImageData(img, 0, 0);
 
     const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(cfg.rotation * Math.PI / 180);
     ctx.imageSmoothingEnabled = true;
-    const diag = Math.sqrt(w * w + h * h);
-    ctx.drawImage(buf, -diag / 2, -diag / 2, diag, diag);
-    ctx.restore();
+    ctx.drawImage(buf, 0, 0, w, h);
 
-    t += 0.008 * cfg.speed;
     requestAnimationFrame(frame);
   }
-  frame();
+  requestAnimationFrame(frame);
 }
 
 /* ── DotField: grid of dots that bulge near the cursor ── */
