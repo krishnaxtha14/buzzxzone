@@ -1,7 +1,7 @@
-# 🌿 buzzXzone — Eco Learning Hub
+# 🌿 buzzXzone
 
-A full-stack Flask web app deployed on **Vercel** with a **Supabase PostgreSQL** backend.  
-An eco-themed learning hub featuring quiz games, a memory-match mini-game, animated visuals, and a capybara mascot.
+A full-stack Flask web app deployed on **Vercel** with a **Supabase PostgreSQL** backend.
+An OTP-authenticated dashboard with animated visuals and a capybara mascot.
 
 Live: **[buzzxzone.vercel.app](https://buzzxzone.vercel.app)**
 
@@ -11,10 +11,6 @@ Live: **[buzzxzone.vercel.app](https://buzzxzone.vercel.app)**
 
 | Feature | Description |
 |---|---|
-| 🐍 **Eco Snake Quiz** | Auto-playing snake — answer correctly to grow it, wrong to shrink it |
-| 🧮 **Math Quiz** | Easy / Medium / Hard difficulty tiers |
-| 🛡️ **Eco Cyber Quiz** | Eco-friendly cyber-security questions across three difficulty tiers |
-| 🧩 **Memory Match** | Locked by default — unlocks at 100 points |
 | ✨ **Neon Mouse Trail** | Glowing animated cursor trail on every page |
 | 🐾 **Capybara Mascot** | Animated Capy on the dashboard — click to get messages |
 | 🌿 **Forest Theme** | Dark-green vibrant UI with animated cards and floating nature symbols |
@@ -39,35 +35,20 @@ Live: **[buzzxzone.vercel.app](https://buzzxzone.vercel.app)**
 ```
 buzzxzone/
 │
-├── app.py                        ← Flask routes, DB, scoring, OTP email, health check
+├── app.py                        ← Flask routes, DB, OTP email, health check
 ├── vercel.json                   ← Vercel deployment config
 ├── requirements.txt              ← Python dependencies
 │
-├── questions/                    ← Question banks (JSON)
-│   ├── snake.json
-│   ├── math_easy.json
-│   ├── math_medium.json
-│   ├── math_hard.json
-│   ├── cyber_easy.json
-│   ├── cyber_medium.json
-│   └── cyber_hard.json
-│
 ├── static/
 │   ├── style.css                 ← Global styles, forest theme, capybara, animations
-│   ├── logo.svg                  ← App logo
-│   ├── game.js                   ← Auto-play snake engine
-│   └── quiz.js                   ← Shared quiz engine (math + cyber)
+│   └── logo.svg                  ← App logo
 │
 └── templates/
     ├── base.html                 ← Shared layout: neon trail, spark effects, audio
-    ├── dashboard.html            ← Game hub with capybara mascot + animated cards
-    ├── snake.html                ← Eco Snake Quiz page
-    ├── difficulty.html           ← Difficulty picker (math + cyber)
-    ├── quiz.html                 ← Generic quiz page
-    ├── memory.html               ← Memory Match (unlockable)
+    ├── dashboard.html             ← Dashboard with capybara mascot
     ├── login.html                ← Login with OTP
     ├── register.html
-    ├── verify.html               ← OTP verification
+    ├── verify.html                ← OTP verification
     ├── forgot.html
     ├── reset_verify.html
     └── new_password.html
@@ -165,86 +146,12 @@ The `users` table is created automatically on first startup:
 
 ```sql
 CREATE TABLE IF NOT EXISTS users (
-    id              SERIAL PRIMARY KEY,
-    username        TEXT NOT NULL,
-    email           TEXT NOT NULL UNIQUE,
-    password        TEXT NOT NULL,
-    high_score      INTEGER NOT NULL DEFAULT 0,
-    memory_unlocked INTEGER NOT NULL DEFAULT 0
+    id       SERIAL PRIMARY KEY,
+    username TEXT NOT NULL,
+    email    TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
 );
 ```
-
----
-
-## Games
-
-### 🐍 Eco Snake Quiz
-
-The snake plays **automatically** — no player controls. Answer questions to influence it.
-
-| Event | Result |
-|---|---|
-| Correct answer | Snake grows (+1 segment) · **+10 points** |
-| Wrong / timeout | Snake shrinks (−1 segment) |
-| Snake too short | Game over |
-| Timer per question | **20 seconds** |
-
-### 🧮 Math Quiz
-
-Three difficulty tiers, 10 pts per correct answer, 20-second timer per question.
-
-- **Easy** — single-digit arithmetic, simple multiplication
-- **Medium** — two-digit arithmetic, tables, division
-- **Hard** — BIDMAS, fractions, percentages, algebra
-
-### 🛡️ Eco Cyber-Security Quiz
-
-Cyber-security questions framed around eco-digital habits.
-
-- **Easy** — phishing basics, password safety, device hygiene
-- **Medium** — 2FA, fake eco-deals, HTTPS, e-waste
-- **Hard** — social engineering, ransomware, encryption, supply-chain attacks
-
-### 🧩 Memory Match
-
-- Locked until the player's **highest score reaches 100 points**
-- 4×4 grid of 16 cards (8 emoji pairs)
-- Shows a progress bar on the locked card
-- Configurable via `UNLOCK_THRESHOLD` in `app.py`
-
----
-
-## Question Format
-
-All questions live in `questions/*.json`:
-
-```json
-[
-  {
-    "q": "What does HTTPS stand for?",
-    "answers": ["HyperText Transfer Protocol Secure", "High Tech Phishing System", "Hyper Transfer Protocol Standard", "HyperText Testing Protocol Suite"],
-    "correct": 0
-  }
-]
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `q` | string | The question text |
-| `answers` | array[4] | Exactly 4 answer choices |
-| `correct` | integer | 0-indexed position of the correct answer |
-
-Questions are shuffled on every new session.
-
----
-
-## Key Constants (`app.py`)
-
-| Constant | Default | Description |
-|---|---|---|
-| `QUESTION_TIME_SEC` | `20` | Seconds allowed per question |
-| `POINTS_PER_Q` | `10` | Points per correct answer |
-| `UNLOCK_THRESHOLD` | `100` | Score needed to unlock Memory Match |
 
 ---
 
@@ -265,12 +172,6 @@ The dashboard features **Capy**, an animated 2D canvas capybara:
 - Ear twitches, eye blinks, tail wag
 - Click to cycle through 10 messages
 - Message auto-cycles every 5 seconds
-
-### Animated Cards
-Dashboard game cards have:
-- Staggered entrance animations
-- Bouncing icon on idle
-- Glowing top-bar reveal on hover
 
 ---
 
