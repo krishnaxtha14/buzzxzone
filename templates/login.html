@@ -4,7 +4,8 @@
 {% block body %}
 <div class="page-wrap">
 
-  <!-- Background effects: soft flowing colour wash + interactive dot field -->
+  <!-- Background effects: silk texture base + soft flowing colour wash + interactive dot field -->
+  <canvas id="silk-bg"     style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
   <canvas id="color-bends" style="position:fixed;inset:0;z-index:1;pointer-events:none;"></canvas>
   <canvas id="dot-field"   style="position:fixed;inset:0;z-index:2;"></canvas>
 
@@ -48,6 +49,9 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
 <script>
+  initSilk(document.getElementById('silk-bg'), {
+    color: '#3d2f52', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
+  });
   initColorBends(document.getElementById('color-bends'), {
     color: '#A855F7', speed: 0.2, frequency: 1.0, noise: 0.15,
     bandWidth: 0.14, rotation: 90, fadeTop: 0.75, iterations: 1, intensity: 1.3,
