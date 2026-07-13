@@ -18,14 +18,6 @@ const SPD_MIN  = 8.0
 const SPD_MAX  = 52.0
 const SPD_ACC  = 2.6
 
-const CAR_DEFS = [
-	{id="blue",   label="Cyber Cruiser",  price=0,   body=Color(0.12,0.34,0.72), accent=Color(0.45,0.72,1.0)},
-	{id="green",  label="Matrix Racer",   price=50,  body=Color(0.10,0.60,0.28), accent=Color(0.30,0.90,0.45)},
-	{id="red",    label="Danger Speed",   price=100, body=Color(0.80,0.12,0.12), accent=Color(1.0, 0.45,0.40)},
-	{id="purple", label="Ghost Phantom",  price=200, body=Color(0.48,0.18,0.68), accent=Color(0.80,0.52,1.0)},
-	{id="gold",   label="Elite Guardian", price=500, body=Color(0.80,0.66,0.06), accent=Color(1.0, 0.90,0.32)},
-]
-
 const ENEMY_COLS = [
 	Color(0.75,0.12,0.12), Color(0.75,0.44,0.06),
 	Color(0.44,0.12,0.66), Color(0.10,0.44,0.72),
@@ -812,9 +804,9 @@ static func _gen_engine_wav() -> AudioStreamWAV:
 
 func _get_car_def() -> Dictionary:
 	var sel = SettingsManager.race_selected if SettingsManager else "blue"
-	for d in CAR_DEFS:
+	for d in SettingsManager.CAR_DEFS:
 		if d.id == sel: return d
-	return CAR_DEFS[0]
+	return SettingsManager.CAR_DEFS[0]
 # Dispatches to a distinct body-shape builder per car model — cars differ in
 # actual silhouette (length/height/wedge/flare), not just paint colour.
 func _make_car(bc: Color, ac: Color, is_player: bool, model: String = "blue") -> Node3D:
@@ -1357,9 +1349,9 @@ func _build_rain():
 func _spawn_logic(delta: float):
 	_obs_t += delta
 	if _obs_t >= _obs_iv:
-		_obs_t = 0.0; _obs_iv = maxf(0.65, _obs_iv - 0.01)
+		_obs_t = 0.0; _obs_iv = maxf(0.95, _obs_iv - 0.01)
 		_do_spawn_enemy()
-		if randf() > 0.55: _do_spawn_enemy()
+		if randf() > 0.72: _do_spawn_enemy()
 	_cot += delta
 	if _cot >= _coiv:
 		_cot = 0.0; _do_spawn_coin()
@@ -1369,7 +1361,7 @@ func _do_spawn_enemy():
 	var ec = ENEMY_COLS.pick_random()
 	# Don't spawn in player's current lane
 	if abs(lx - _player_offset) < 1.0: return
-	var model = CAR_DEFS[randi() % CAR_DEFS.size()].id
+	var model = SettingsManager.CAR_DEFS[randi() % SettingsManager.CAR_DEFS.size()].id
 	var en = _make_car(ec, Color.WHITE, false, model)
 	var z = SPAWN_Z * 0.82
 	var d = _world_dist - z
@@ -1519,7 +1511,7 @@ func _build_hud():
 	back.add_theme_color_override("font_color", Color("#7AB0E0"))
 	back.add_theme_font_size_override("font_size", 20)
 	_hud.add_child(back)
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/mission_select.tscn"))
+	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/garage.tscn"))
 
 	# Quit button
 	var quit_btn = Button.new(); quit_btn.text = "QUIT"
@@ -1597,10 +1589,10 @@ func _game_over():
 	_show_modal("GAME OVER", Color("#CC2222"),
 		"Score: " + str(_score) + "\nCoins this run:  " + str(_coins) +
 		"\nTotal coins:  " + str(SettingsManager.race_coins if SettingsManager else _coins),
-		[["PLAY AGAIN","#1D9E75"], [" CAR SHOP","#7733BB"], [" Mission Select","#185FA5"], ["X  Quit Game","#4A1010"]],
+		[["PLAY AGAIN","#1D9E75"], [" CAR SHOP","#7733BB"], [" Garage","#185FA5"], ["X  Quit Game","#4A1010"]],
 		[func(): get_tree().reload_current_scene(),
 		 func(): _show_shop(),
-		 func(): get_tree().change_scene_to_file("res://scenes/mission_select.tscn"),
+		 func(): get_tree().change_scene_to_file("res://scenes/garage.tscn"),
 		 func(): get_tree().quit()])
 
 # -----------------------------------------------------------------------------
@@ -1699,7 +1691,7 @@ func _show_shop():
 	var owned = SettingsManager.race_owned    if SettingsManager else ["blue"]
 	var sel   = SettingsManager.race_selected if SettingsManager else "blue"
 
-	for car in CAR_DEFS:
+	for car in SettingsManager.CAR_DEFS:
 		var card = VBoxContainer.new(); card.add_theme_constant_override("separation", 5)
 		card.custom_minimum_size = Vector2(172, 0)
 		var cst = StyleBoxFlat.new()

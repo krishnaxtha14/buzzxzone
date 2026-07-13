@@ -1,6 +1,15 @@
 extends Node
 
-const SAVE_PATH = "user://cyber_guardian.cfg"
+const SAVE_PATH = "user://buzzxzone.cfg"
+
+# Shared car catalogue — used by both the Garage screen and the race scene.
+const CAR_DEFS = [
+	{id="blue",   label="Cyber Cruiser",  price=0,   body=Color(0.12,0.34,0.72), accent=Color(0.45,0.72,1.0)},
+	{id="green",  label="Matrix Racer",   price=50,  body=Color(0.10,0.60,0.28), accent=Color(0.30,0.90,0.45)},
+	{id="red",    label="Danger Speed",   price=100, body=Color(0.80,0.12,0.12), accent=Color(1.0, 0.45,0.40)},
+	{id="purple", label="Ghost Phantom",  price=200, body=Color(0.48,0.18,0.68), accent=Color(0.80,0.52,1.0)},
+	{id="gold",   label="Elite Guardian", price=500, body=Color(0.80,0.66,0.06), accent=Color(1.0, 0.90,0.32)},
+]
 
 var music_volume: float = 0.5
 var sfx_volume:   float = 0.85

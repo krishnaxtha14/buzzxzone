@@ -425,7 +425,7 @@ static func spawn_correct_particles(parent: Control, pos: Vector2):
 #  Universal back button — call StyleManager.add_back_button(self) in _ready()
 # ─────────────────────────────────────────────────────────────────────────────
 static func add_back_button(root: Control,
-							dest: String = "res://scenes/mission_select.tscn") -> Button:
+							dest: String = "res://scenes/garage.tscn") -> Button:
 	var btn = Button.new()
 	btn.text  = "← Back"
 	btn.z_index = 90
