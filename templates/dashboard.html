@@ -8,78 +8,18 @@
   <nav class="sidebar">
     <div class="sidebar-logo"><img src="{{ url_for('static', filename='logo.svg') }}" width="36" height="36" alt="Cyber" style="vertical-align:middle;margin-right:8px;">CYBER</div>
     <a href="/dashboard" class="active">🏠 Dashboard</a>
-    <a href="/games/snake">🐍 Eco Snake Quiz</a>
-    <a href="/games/math">🧮 Math Quiz</a>
-    <a href="/games/cyber">🛡️ Cyber Quiz</a>
-    <a href="/games/memory">🧩 Memory Match {% if not progress.memory_unlocked %}🔒{% endif %}</a>
     <a href="/logout" class="logout">⏻ Logout</a>
   </nav>
 
   <!-- Main -->
   <div class="main-content">
     <h1 class="page-heading">WELCOME BACK, {{ username }}!</h1>
-    <p class="page-sub">
-      🟢 ONLINE &nbsp;·&nbsp; BEST SCORE:
-      <span class="score-badge">{{ progress.high_score }}</span>
-    </p>
+    <p class="page-sub">🟢 ONLINE</p>
 
     <!-- Capybara Mascot -->
     <div class="capybara-wrap">
       <canvas id="capybara-canvas" width="160" height="100" title="Click me!"></canvas>
       <div class="capybara-bubble" id="capy-bubble">Hello! I'm Capy 🌿</div>
-    </div>
-
-    {% if locked_msg %}
-      <p class="err" style="margin-bottom:18px;">{{ locked_msg }}</p>
-    {% endif %}
-
-    <div class="game-grid">
-
-      <!-- Eco Snake Quiz -->
-      <div class="game-card">
-        <div class="icon">🐍</div>
-        <h3>ECO SNAKE QUIZ</h3>
-        <p>Watch the snake play itself! Answer correctly to grow it,
-           get it wrong and it shrinks. 20 sec per question · 10 pts each.</p>
-        <a href="/games/snake" class="play-btn play-green">PLAY NOW →</a>
-      </div>
-
-      <!-- Math Quiz -->
-      <div class="game-card">
-        <div class="icon">🧮</div>
-        <h3>MATH QUIZ</h3>
-        <p>Pick Easy, Medium or Hard. 20 sec per question. 10 pts each correct answer.</p>
-        <a href="/games/math" class="play-btn play-green">PLAY NOW →</a>
-      </div>
-
-      <!-- Cyber Quiz -->
-      <div class="game-card">
-        <div class="icon">🛡️</div>
-        <h3>ECO CYBER QUIZ</h3>
-        <p>Stay safe online AND save the planet. Easy / Medium / Hard.
-           20 sec per question · 10 pts each.</p>
-        <a href="/games/cyber" class="play-btn play-yellow">PLAY NOW →</a>
-      </div>
-
-      {% if progress.memory_unlocked %}
-        <div class="game-card">
-          <div class="icon">🧩</div>
-          <h3>MEMORY MATCH</h3>
-          <p>Unlocked! Flip the cards and match all 8 emoji pairs.</p>
-          <a href="/games/memory" class="play-btn play-yellow">PLAY NOW →</a>
-        </div>
-      {% else %}
-        <div class="game-card locked">
-          <div class="icon">🔒</div>
-          <h3>MEMORY MATCH</h3>
-          <p>Locked! Reach <strong>{{ progress.threshold }}</strong> points
-             in any quiz to unlock.<br>
-             Best so far: <strong>{{ progress.high_score }}</strong> / {{ progress.threshold }}</p>
-          <div class="unlock-bar"><div class="unlock-fill" style="width: {{ progress.progress_pct }}%;"></div></div>
-          <button class="play-btn play-locked" disabled>🔒 LOCKED</button>
-        </div>
-      {% endif %}
-
     </div>
   </div>
 </div>

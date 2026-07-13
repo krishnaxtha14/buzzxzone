@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import random
 import os
-import json
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
@@ -16,11 +15,7 @@ load_dotenv()
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-BASE_DIR          = os.path.dirname(os.path.abspath(__file__))
-QUESTIONS_DIR     = os.path.join(BASE_DIR, "questions")
-QUESTION_TIME_SEC = 20
-POINTS_PER_Q      = 10
-UNLOCK_THRESHOLD  = 100
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-production")
@@ -46,7 +41,7 @@ def get_cur(conn):
 
 
 def init_db():
-    """Create the users table if it doesn't exist, and run any pending migrations."""
+    """Create the users table if it doesn't exist."""
     conn = get_db()
     cur  = conn.cursor()          # plain cursor is fine here (no row access)
     cur.execute("""
@@ -54,24 +49,9 @@ def init_db():
             id              SERIAL PRIMARY KEY,
             username        TEXT NOT NULL,
             email           TEXT NOT NULL UNIQUE,
-            password        TEXT NOT NULL,
-            high_score      INTEGER NOT NULL DEFAULT 0,
-            memory_unlocked INTEGER NOT NULL DEFAULT 0
+            password        TEXT NOT NULL
         )
     """)
-    # Migration: add columns that may be missing in older deployments
-    cur.execute("""
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'users'
-    """)
-    existing_cols = {row[0] for row in cur.fetchall()}
-    if "high_score" not in existing_cols:
-        cur.execute("ALTER TABLE users ADD COLUMN high_score INTEGER NOT NULL DEFAULT 0")
-        print("[cyber] Migrated: added users.high_score column")
-    if "memory_unlocked" not in existing_cols:
-        cur.execute("ALTER TABLE users ADD COLUMN memory_unlocked INTEGER NOT NULL DEFAULT 0")
-        print("[cyber] Migrated: added users.memory_unlocked column")
     conn.commit()
     conn.close()
 
@@ -101,68 +81,6 @@ def send_otp_email(to_email, otp):
     except Exception as e:
         print("[cyber] Email error:", e)
         print(f"[cyber] (DEV) OTP for {to_email} is: {otp}")
-
-
-# ─────────────────────────────────────────────
-# QUESTIONS LOADER
-# ─────────────────────────────────────────────
-def load_questions(name):
-    path = os.path.join(QUESTIONS_DIR, f"{name}.json")
-    with open(path, "r", encoding="utf-8") as f:
-        pool = json.load(f)
-    random.shuffle(pool)
-    return pool
-
-
-# ─────────────────────────────────────────────
-# SCORE / UNLOCK HELPERS
-# ─────────────────────────────────────────────
-def update_high_score(user_id, new_score):
-    """Save the user's high score and unlock memory match if threshold reached."""
-    conn = get_db()
-    cur  = get_cur(conn)
-    cur.execute(
-        "SELECT high_score, memory_unlocked FROM users WHERE id = %s",
-        (user_id,)
-    )
-    row = cur.fetchone()
-    if row is None:
-        conn.close()
-        return 0, False
-
-    best     = max(row["high_score"], int(new_score))
-    unlocked = 1 if (best >= UNLOCK_THRESHOLD or row["memory_unlocked"]) else 0
-
-    cur.execute(
-        "UPDATE users SET high_score = %s, memory_unlocked = %s WHERE id = %s",
-        (best, unlocked, user_id),
-    )
-    conn.commit()
-    conn.close()
-    return best, bool(unlocked)
-
-
-def get_user_progress(user_id):
-    """Returns dict with high_score, memory_unlocked, threshold, progress_pct."""
-    conn = get_db()
-    cur  = get_cur(conn)
-    cur.execute(
-        "SELECT high_score, memory_unlocked FROM users WHERE id = %s",
-        (user_id,)
-    )
-    row = cur.fetchone()
-    conn.close()
-    if row is None:
-        return {"high_score": 0, "memory_unlocked": False,
-                "threshold": UNLOCK_THRESHOLD, "progress_pct": 0}
-
-    pct = min(100, int(row["high_score"] * 100 / UNLOCK_THRESHOLD)) if UNLOCK_THRESHOLD else 100
-    return {
-        "high_score":      row["high_score"],
-        "memory_unlocked": bool(row["memory_unlocked"]),
-        "threshold":       UNLOCK_THRESHOLD,
-        "progress_pct":    pct,
-    }
 
 
 # ─────────────────────────────────────────────
@@ -326,129 +244,10 @@ def logout():
 def dashboard():
     if "user_id" not in session:
         return redirect("/login")
-    progress    = get_user_progress(session["user_id"])
-    locked_msg  = session.pop("locked_msg", None)
     return render_template(
         "dashboard.html",
         username=session.get("username", "PLAYER"),
-        progress=progress,
-        locked_msg=locked_msg,
     )
-
-
-# ─────────────────────────────────────────────
-# GAME ROUTES
-# ─────────────────────────────────────────────
-@app.route("/games/snake")
-def snake():
-    if "user_id" not in session:
-        return redirect("/login")
-    questions = load_questions("snake")
-    return render_template(
-        "snake.html",
-        questions_json=json.dumps(questions),
-        username=session.get("username", "PLAYER"),
-        question_time=QUESTION_TIME_SEC,
-        points_per_q=POINTS_PER_Q,
-    )
-
-
-@app.route("/games/math")
-def math_picker():
-    if "user_id" not in session:
-        return redirect("/login")
-    return render_template("difficulty.html",
-                           category="math",
-                           title="MATH QUIZ",
-                           icon="🧮",
-                           username=session.get("username", "PLAYER"))
-
-
-@app.route("/games/cyber")
-def cyber_picker():
-    if "user_id" not in session:
-        return redirect("/login")
-    return render_template("difficulty.html",
-                           category="cyber",
-                           title="ECO CYBER-SECURITY QUIZ",
-                           icon="🛡️",
-                           username=session.get("username", "PLAYER"))
-
-
-@app.route("/games/<category>/<difficulty>")
-def play_quiz(category, difficulty):
-    if "user_id" not in session:
-        return redirect("/login")
-    if category not in ("math", "cyber"):
-        return redirect("/dashboard")
-    if difficulty not in ("easy", "medium", "hard"):
-        return redirect(f"/games/{category}")
-
-    bank_name = f"{category}_{difficulty}"
-    try:
-        questions = load_questions(bank_name)
-    except FileNotFoundError:
-        return redirect(f"/games/{category}")
-
-    title_map = {"math": "MATH QUIZ", "cyber": "ECO CYBER-SECURITY QUIZ"}
-    return render_template(
-        "quiz.html",
-        questions_json=json.dumps(questions),
-        category=category,
-        difficulty=difficulty,
-        title=title_map[category],
-        username=session.get("username", "PLAYER"),
-        question_time=QUESTION_TIME_SEC,
-        points_per_q=POINTS_PER_Q,
-    )
-
-
-@app.route("/games/memory")
-def memory():
-    if "user_id" not in session:
-        return redirect("/login")
-    progress = get_user_progress(session["user_id"])
-    if not progress["memory_unlocked"]:
-        session["locked_msg"] = (
-            f"🔒 Memory Match is locked. Reach {progress['threshold']} points "
-            f"to unlock it! (Best so far: {progress['high_score']})"
-        )
-        return redirect("/dashboard")
-    return render_template("memory.html", username=session.get("username", "PLAYER"))
-
-
-# ─────────────────────────────────────────────
-# SCORE SUBMISSION
-# ─────────────────────────────────────────────
-@app.route("/api/submit_score", methods=["POST"])
-def submit_score():
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "not_logged_in"}), 401
-    try:
-        data       = request.get_json(silent=True) or {}
-        score      = int(data.get("score", 0))
-        source     = data.get("source", "unknown")
-        difficulty = data.get("difficulty", "")
-        best, unlocked = update_high_score(session["user_id"], score)
-        print(f"[cyber] submit_score user={session['user_id']} "
-              f"src={source}/{difficulty} score={score} -> best={best} unlocked={unlocked}")
-        return jsonify({
-            "ok":              True,
-            "submitted":       score,
-            "high_score":      best,
-            "memory_unlocked": unlocked,
-            "threshold":       UNLOCK_THRESHOLD,
-        })
-    except Exception as e:
-        print("[cyber] submit_score ERROR:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/api/progress")
-def api_progress():
-    if "user_id" not in session:
-        return jsonify({"ok": False}), 401
-    return jsonify({"ok": True, **get_user_progress(session["user_id"])})
 
 
 # ─────────────────────────────────────────────
