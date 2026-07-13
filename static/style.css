@@ -86,7 +86,7 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 
 /* ── Card ──────────────────────────────────────────────────── */
 .card {
-  background: linear-gradient(145deg, rgba(14,45,26,.92) 0%, rgba(7,26,15,.95) 100%);
+  background: linear-gradient(145deg, rgba(26,16,45,.92) 0%, rgba(15,9,28,.95) 100%);
   border: 1px solid var(--card-bdr);
   border-radius: var(--radius);
   padding: 40px 36px;
@@ -222,7 +222,7 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 .sidebar {
   width: 230px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(7,26,15,.7) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(15,9,28,.7) 100%);
   border-right: 1px solid rgba(168,85,247,.18);
   padding: 28px 18px;
   display: flex;
@@ -300,7 +300,7 @@ a:hover { text-shadow: 0 0 8px var(--green); }
   margin-top: 12px;
 }
 .game-card {
-  background: linear-gradient(145deg, rgba(14,45,26,.85), rgba(7,26,15,.9));
+  background: linear-gradient(145deg, rgba(26,16,45,.85), rgba(15,9,28,.9));
   border: 1px solid rgba(168,85,247,.22);
   border-radius: var(--radius);
   padding: 28px 20px;
@@ -1083,7 +1083,7 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 }
 
 .capybara-bubble {
-  background: rgba(14,45,26,.92);
+  background: rgba(26,16,45,.92);
   border: 1px solid rgba(168,85,247,.4);
   border-radius: 14px 14px 14px 0;
   padding: 8px 14px;
