@@ -15,7 +15,8 @@ load_dotenv()
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
+GODOT_GAME_HTML = "Educational cybersecurity game.html"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-production")
@@ -248,6 +249,16 @@ def dashboard():
         "dashboard.html",
         username=session.get("username", "PLAYER"),
     )
+
+
+# ─────────────────────────────────────────────
+# GAME
+# ─────────────────────────────────────────────
+@app.route("/games/cybersecurity")
+def cybersecurity_game():
+    if "user_id" not in session:
+        return redirect("/login")
+    return redirect(f"/static/godot/{GODOT_GAME_HTML}")
 
 
 # ─────────────────────────────────────────────
