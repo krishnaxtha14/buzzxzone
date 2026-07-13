@@ -185,7 +185,7 @@ a:hover { text-shadow: 0 0 8px var(--green); }
   transform: translateX(-100%);
   transition: transform 0.4s;
 }
-.btn:hover  { transform: scale(1.03); box-shadow: 0 6px 28px rgba(168,85,247,0.55); background: #6ee7a0; }
+.btn:hover  { transform: scale(1.03); box-shadow: 0 6px 28px rgba(168,85,247,0.55); background: #c084fc; }
 .btn:hover::after { transform: translateX(100%); }
 .btn:active { transform: scale(0.97); }
 
