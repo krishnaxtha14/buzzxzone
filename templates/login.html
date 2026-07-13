@@ -9,10 +9,12 @@
 
   <div class="card" style="z-index:3">
 
-    <!-- SVG Logo -->
-    <img src="{{ url_for('static', filename='logo.svg') }}"
-         width="80" height="80" alt="Cyber Logo"
-         class="cyber-hero-logo">
+    <!-- Animated logo -->
+    <a href="/" class="brand-logo-link" aria-label="BuzzXzone home">
+      <video src="{{ url_for('static', filename='logo.mp4') }}"
+             width="80" height="80" class="cyber-hero-logo brand-logo"
+             autoplay loop muted playsinline></video>
+    </a>
 
     <div class="card-title" style="margin-bottom:4px;">CYBER</div>
 

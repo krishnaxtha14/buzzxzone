@@ -6,7 +6,13 @@
 
   <!-- Sidebar -->
   <nav class="sidebar">
-    <div class="sidebar-logo"><img src="{{ url_for('static', filename='logo.svg') }}" width="36" height="36" alt="Cyber" style="vertical-align:middle;margin-right:8px;">CYBER</div>
+    <div class="sidebar-logo">
+      <a href="/dashboard" class="brand-logo-link" aria-label="BuzzXzone home">
+        <video src="{{ url_for('static', filename='logo.mp4') }}"
+               width="36" height="36" class="brand-logo" style="vertical-align:middle;margin-right:8px;"
+               autoplay loop muted playsinline></video>
+      </a>CYBER
+    </div>
     <a href="/dashboard" class="active">🏠 Dashboard</a>
     <a href="/logout" class="logout">⏻ Logout</a>
   </nav>
