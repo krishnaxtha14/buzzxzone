@@ -16,7 +16,7 @@ load_dotenv()
 # CONFIG
 # ─────────────────────────────────────────────
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
-GODOT_GAME_HTML = "Educational cybersecurity game.html"
+GODOT_GAME_HTML = "game.html"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey-change-in-production")

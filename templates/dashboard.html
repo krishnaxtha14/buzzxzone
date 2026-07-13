@@ -26,12 +26,100 @@
       <div class="game-card">
         <div class="icon">🛡️</div>
         <h3>EDUCATIONAL CYBERSECURITY GAME</h3>
-        <p>Learn to spot phishing, scams, and online threats in this interactive Godot game.</p>
-        <a href="/games/cybersecurity" class="play-btn play-green" target="_blank" rel="noopener">PLAY NOW →</a>
+        <p>Learn to spot phishing, scams, and online threats in this interactive Godot game. Use W/A/S/D to drive.</p>
+        <button type="button" class="play-btn play-green" id="open-game-btn">PLAY NOW →</button>
       </div>
     </div>
   </div>
+
+  <!-- Embedded game window -->
+  <div class="game-window hidden" id="game-window">
+    <div class="game-window-bar" id="game-window-bar">
+      <span class="game-window-title">🛡️ Educational Cybersecurity Game</span>
+      <div class="game-window-controls">
+        <button type="button" id="game-min-btn" title="Minimize">🗕</button>
+        <button type="button" id="game-max-btn" title="Maximize">🗖</button>
+        <button type="button" id="game-close-btn" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="game-window-body">
+      <iframe id="game-frame" title="Educational Cybersecurity Game" allow="autoplay; fullscreen"></iframe>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.game-window {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(920px, calc(100vw - 48px));
+  height: min(640px, calc(100vh - 96px));
+  background: #0b1410;
+  border: 1px solid rgba(34,197,94,.35);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 500;
+  transition: width .2s ease, height .2s ease, opacity .15s ease;
+}
+.game-window.hidden { display: none; }
+.game-window.maximized {
+  right: 16px; bottom: 16px; left: 16px; top: 16px;
+  width: auto; height: auto;
+}
+.game-window.minimized {
+  width: 280px;
+  height: 44px;
+}
+.game-window.minimized .game-window-body { display: none; }
+.game-window-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #14251c, #0f1c15);
+  border-bottom: 1px solid rgba(34,197,94,.25);
+  cursor: default;
+  user-select: none;
+}
+.game-window-title {
+  font-family: var(--font-head);
+  font-size: .85rem;
+  color: var(--green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-window-controls { display: flex; gap: 6px; flex: 0 0 auto; }
+.game-window-controls button {
+  width: 28px; height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: .85rem;
+  line-height: 1;
+}
+.game-window-controls button:hover { background: rgba(34,197,94,.3); }
+#game-close-btn:hover { background: rgba(239,68,68,.45); }
+.game-window-body { flex: 1 1 auto; min-height: 0; }
+.game-window-body iframe {
+  width: 100%; height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+}
+@media (max-width: 640px) {
+  .game-window { right: 12px; left: 12px; bottom: 12px; width: auto; }
+}
+</style>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -210,6 +298,52 @@
   }, 5000);
 
   animate();
+})();
+</script>
+
+<script>
+/* ── Embedded game window (open / minimize / maximize / close) ── */
+(function() {
+  const win      = document.getElementById('game-window');
+  const frame    = document.getElementById('game-frame');
+  const openBtn  = document.getElementById('open-game-btn');
+  const minBtn   = document.getElementById('game-min-btn');
+  const maxBtn   = document.getElementById('game-max-btn');
+  const closeBtn = document.getElementById('game-close-btn');
+  const titleBar = document.getElementById('game-window-bar');
+  if (!win || !openBtn) return;
+
+  function openGame() {
+    if (!frame.src) frame.src = '/games/cybersecurity';
+    win.classList.remove('hidden', 'minimized');
+  }
+
+  function toggleMinimize() {
+    win.classList.toggle('minimized');
+    win.classList.remove('maximized');
+  }
+
+  function toggleMaximize() {
+    win.classList.toggle('maximized');
+    win.classList.remove('minimized');
+  }
+
+  function closeGame() {
+    win.classList.add('hidden');
+    win.classList.remove('minimized', 'maximized');
+  }
+
+  openBtn.addEventListener('click', openGame);
+  minBtn.addEventListener('click', toggleMinimize);
+  maxBtn.addEventListener('click', toggleMaximize);
+  closeBtn.addEventListener('click', closeGame);
+
+  // Clicking the title bar while minimized restores the window
+  titleBar.addEventListener('click', (e) => {
+    if (win.classList.contains('minimized') && e.target === titleBar || e.target.classList.contains('game-window-title')) {
+      win.classList.remove('minimized');
+    }
+  });
 })();
 </script>
 {% endblock %}
