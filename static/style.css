@@ -332,11 +332,11 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 .game-card p        { color: var(--muted); font-size: 0.82rem; margin-bottom: 16px; line-height: 1.5; }
 .game-card .play-btn {
   display: inline-block; padding: 9px 22px; border-radius: 10px;
-  font-family: var(--font-head); font-size: .86rem; color: #071a0f;
+  font-family: var(--font-head); font-size: .86rem; color: #0d0920;
   transition: transform .15s, box-shadow .15s; font-weight: 900; letter-spacing: .5px;
 }
 .game-card .play-btn:hover { transform: scale(1.07); }
-.play-green  { background: linear-gradient(135deg, var(--green), #16a34a); box-shadow: 0 4px 14px rgba(168,85,247,.5); }
+.play-green  { background: linear-gradient(135deg, var(--green), #7c3aed); box-shadow: 0 4px 14px rgba(168,85,247,.5); }
 .play-yellow { background: linear-gradient(135deg, var(--yellow), #d97706); box-shadow: 0 4px 14px rgba(251,191,36,.5); color: #1a0a00; }
 .play-locked { background: rgba(100,100,100,.3); color: var(--muted); box-shadow: none; }
 
