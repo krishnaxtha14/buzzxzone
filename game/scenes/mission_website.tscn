@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://c4twqrnpdrsgn"]
+
+[ext_resource type="Script" uid="uid://xbchags5pt8v" path="res://scripts/website_logic.gd" id="1_b8hfn"]
+[ext_resource type="Theme" uid="uid://lyk8h4rpxffg" path="res://assets/game_theme.tres" id="1_u2sge"]
+
+[node name="Control" type="Control" unique_id=785218715]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_u2sge")
+script = ExtResource("1_b8hfn")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1627813591]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.050980393, 0.105882354, 0.16470589, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1959027401]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 820.0
+offset_bottom = 640.0
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="VBoxContainer" unique_id=277294065]
+layout_mode = 2
+text = "Mission 3 — Fake Website"
+
+[node name="Label2" type="Label" parent="VBoxContainer" unique_id=951318611]
+layout_mode = 2
+text = "Spot the red flags — is this site real or fake?"
+
+[node name="ScoreLabel" type="Label" parent="VBoxContainer" unique_id=2085244525]
+layout_mode = 2
+text = "Score: 0"
+
+[node name="HintLabel" type="Label" parent="VBoxContainer" unique_id=1404373425]
+layout_mode = 2
+autowrap_mode = 3
+text = "Inspect the website carefully"
+
+[node name="BrowserPanel" type="PanelContainer" parent="VBoxContainer" unique_id=28323403]
+layout_mode = 2
+
+[node name="BrowserVBox" type="VBoxContainer" parent="VBoxContainer/BrowserPanel" unique_id=2147110727]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="UrlLabel" type="Label" parent="VBoxContainer/BrowserPanel/BrowserVBox" unique_id=1828813034]
+layout_mode = 2
+text = "URL"
+
+[node name="SiteTitle" type="Label" parent="VBoxContainer/BrowserPanel/BrowserVBox" unique_id=187004598]
+layout_mode = 2
+text = "Site Title"
+
+[node name="SiteBody" type="Label" parent="VBoxContainer/BrowserPanel/BrowserVBox" unique_id=34663225]
+layout_mode = 2
+autowrap_mode = 3
+text = "Site Content"
+
+[node name="QuestionLabel" type="Label" parent="VBoxContainer" unique_id=1223718362]
+layout_mode = 2
+autowrap_mode = 3
+text = "Question goes here"
+
+[node name="OptionsBox" type="VBoxContainer" parent="VBoxContainer" unique_id=1219580]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Opt1" type="Button" parent="VBoxContainer/OptionsBox" unique_id=463046727]
+layout_mode = 2
+text = "Option 1"
+
+[node name="Opt2" type="Button" parent="VBoxContainer/OptionsBox" unique_id=1450802758]
+layout_mode = 2
+text = "Option 2"
+
+[node name="Opt3" type="Button" parent="VBoxContainer/OptionsBox" unique_id=26279966]
+layout_mode = 2
+text = "Option 3"
+
+[node name="Opt4" type="Button" parent="VBoxContainer/OptionsBox" unique_id=839181810]
+layout_mode = 2
+text = "Option 4"
+
+[node name="FeedbackLabel" type="Label" parent="VBoxContainer" unique_id=1006878062]
+layout_mode = 2
+autowrap_mode = 3

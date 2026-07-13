@@ -9,6 +9,7 @@ import os
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -133,12 +134,14 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = ""
+    email = ""
     if request.method == "POST":
+        email = request.form["email"]
         conn = get_db()
         cur  = get_cur(conn)
         cur.execute(
             "SELECT * FROM users WHERE email = %s",
-            (request.form["email"],)
+            (email,)
         )
         user = cur.fetchone()
         conn.close()
@@ -151,7 +154,7 @@ def login():
             session["temp_user"]  = {"id": user["id"], "username": user["username"]}
             send_otp_email(user["email"], otp)
             return redirect("/verify")
-    return render_template("login.html", error=error)
+    return render_template("login.html", error=error, email=email)
 
 
 @app.route("/verify", methods=["GET", "POST"])
@@ -258,7 +261,8 @@ def dashboard():
 def cybersecurity_game():
     if "user_id" not in session:
         return redirect("/login")
-    return redirect(f"/static/godot/{GODOT_GAME_HTML}")
+    username = session.get("username", "PLAYER")
+    return redirect(f"/static/godot/{GODOT_GAME_HTML}?user={quote(username)}")
 
 
 # ─────────────────────────────────────────────

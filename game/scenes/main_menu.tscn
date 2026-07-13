@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://bdv4fq2cbw5de"]
+
+[ext_resource type="Theme" uid="uid://lyk8h4rpxffg" path="res://assets/game_theme.tres" id="1_ekxnf"]
+[ext_resource type="Script" uid="uid://dyg4012iipwae" path="res://scripts/main_menu.gd" id="1_l6cm7"]
+[ext_resource type="Script" uid="uid://bhqewerlpu4c0" path="res://scripts/CyberBackground.gd" id="3_bqqt6"]
+
+[node name="Control" type="Control" unique_id=1391002144]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_ekxnf")
+script = ExtResource("1_l6cm7")
+
+[node name="CyberBackground" type="ColorRect" parent="." unique_id=1160876662]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_bqqt6")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=896933372]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.050980393, 0.105882354, 0.16470589, 0)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1402400518]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -290.0
+offset_top = 30.0
+offset_right = 290.0
+offset_bottom = 648.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="VBoxContainer" unique_id=829767915]
+layout_mode = 2
+text = "CYBER GUARDIAN"
+
+[node name="Label2" type="Label" parent="VBoxContainer" unique_id=902638768]
+layout_mode = 2
+text = "Protect Alex. Master the Digital World."
+
+[node name="Button" type="Button" parent="VBoxContainer" unique_id=1062153407]
+layout_mode = 2
+text = "  PLAY NOW  "
+
+[node name="Button2" type="Button" parent="VBoxContainer" unique_id=509491842]
+layout_mode = 2
+text = "  HOW TO PLAY  "

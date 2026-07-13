@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bsowp4nx1layy"]
+
+[ext_resource type="Script" path="res://scripts/race_3d.gd" id="1_r3d01"]
+
+[node name="Race3D" type="Node3D"]
+script = ExtResource("1_r3d01")

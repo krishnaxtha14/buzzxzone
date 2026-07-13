@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://carrace2025gm"]
+
+[ext_resource type="Script" uid="uid://b2ybbg6oehtrd" path="res://scripts/car_race.gd" id="1_race01"]
+
+[node name="CarRace" type="Control" unique_id=1422387406]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_race01")

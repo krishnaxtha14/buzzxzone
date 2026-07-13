@@ -16,18 +16,16 @@
              autoplay loop muted playsinline></video>
     </a>
 
-    <div class="card-title" style="margin-bottom:4px;">CYBER</div>
-
-    <p class="login-subtitle">LEARNING QUIZ HUB</p>
+    <div class="card-title" style="margin-bottom:4px;">BuzzXzone</div>
 
     <form method="POST">
       <div class="field">
-        <input name="email" type="email" placeholder="Email Address" required>
+        <input name="email" type="email" placeholder="Email Address" value="{{ email or '' }}" required>
       </div>
       <div class="field">
         <input name="password" type="password" placeholder="Password" required>
       </div>
-      <button class="btn" type="submit">ENTER THE ARENA →</button>
+      <button class="btn" type="submit">LOG IN →</button>
     </form>
 
     {% if error %}

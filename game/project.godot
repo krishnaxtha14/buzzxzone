@@ -1,0 +1,43 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="BuzzXzone"
+run/main_scene="uid://bdv4fq2cbw5de"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+boot_splash/show_image=false
+run/max_fps=60
+
+[autoload]
+
+SettingsManager="*res://scripts/settings_manager.gd"
+GameManager="*uid://yaieyh6suy6a"
+StyleManager="*uid://celx7p6e2273y"
+AudioManager="*res://scripts/audio_manager.gd"
+CursorManager="*res://scripts/cursor_manager.gd"
+
+[display]
+
+window/size/mode=3
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/msaa_3d=0
