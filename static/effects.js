@@ -11,6 +11,47 @@ function hexToRgb(hex) {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
+/* ── Real green-screen chroma-key: the brand clips are shot on pure
+   rgb(0,254,0). Keyed by green-dominance (green minus the stronger of
+   red/blue) rather than flat distance-to-a-swatch, which holds up better
+   on anti-aliased edges; edge pixels also get their green channel pulled
+   down ("despill") so they don't keep a green fringe once transparent
+   compositing is applied over a dark page. ── */
+function initChromaVideo(video, canvas, opts = {}) {
+  const cfg = Object.assign({
+    lowCut:  40,   // greenness below this => fully opaque (real content)
+    highCut: 90,   // greenness above this => fully transparent (pure screen)
+    width:   canvas.width  || canvas.offsetWidth  || 160,
+    height:  canvas.height || canvas.offsetHeight || 160,
+  }, opts);
+
+  canvas.width = cfg.width;
+  canvas.height = cfg.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  function frame() {
+    if (video.readyState >= 2) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const greenness = g - Math.max(r, b);
+        if (greenness >= cfg.highCut) {
+          d[i + 3] = 0;
+        } else if (greenness > cfg.lowCut) {
+          const t = (greenness - cfg.lowCut) / (cfg.highCut - cfg.lowCut);
+          d[i + 3] = Math.round(255 * (1 - t));
+          d[i + 1] = Math.round(g - t * greenness); // despill the fringe
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
 /* ── ColorBends: soft flowing colour bands, rotated, fading out near the top ── */
 function initColorBends(canvas, opts = {}) {
   const cfg = Object.assign({
@@ -69,6 +110,59 @@ function initColorBends(canvas, opts = {}) {
   frame();
 }
 
+/* ── Silk: soft flowing fabric-like noise, rendered at low-res and
+   upscaled (the blur from upscaling is what gives it a silky softness). ── */
+function initSilk(canvas, opts = {}) {
+  const cfg = Object.assign({
+    color: '#7B7481', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
+  }, opts);
+
+  const { r, g, b } = hexToRgb(cfg.color);
+  const ctx = canvas.getContext('2d');
+  const BUF = 96;
+  const buf = document.createElement('canvas');
+  buf.width = BUF; buf.height = BUF;
+  const bctx = buf.getContext('2d');
+  const img = bctx.createImageData(BUF, BUF);
+  let t = 0;
+
+  function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function frame() {
+    const freq = 0.12 * cfg.scale;
+    const d = img.data;
+    for (let y = 0; y < BUF; y++) {
+      for (let x = 0; x < BUF; x++) {
+        const i = (y * BUF + x) * 4;
+        const n =
+          Math.sin(x * freq + t) * 0.5 +
+          Math.sin(y * freq * 1.3 - t * 0.8) * 0.5 +
+          Math.sin((x + y) * freq * 0.7 + t * 1.4) * 0.4 * cfg.noiseIntensity;
+        const v = 0.5 + n * 0.28;
+        d[i]     = r; d[i + 1] = g; d[i + 2] = b;
+        d[i + 3] = Math.max(0, Math.min(255, v * 150));
+      }
+    }
+    bctx.putImageData(img, 0, 0);
+
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(cfg.rotation * Math.PI / 180);
+    ctx.imageSmoothingEnabled = true;
+    const diag = Math.sqrt(w * w + h * h);
+    ctx.drawImage(buf, -diag / 2, -diag / 2, diag, diag);
+    ctx.restore();
+
+    t += 0.008 * cfg.speed;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
 /* ── DotField: grid of dots that bulge near the cursor ── */
 function initDotField(canvas, opts = {}) {
   const cfg = Object.assign({
@@ -108,12 +202,12 @@ function initDotField(canvas, opts = {}) {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         let radius = cfg.dotRadius;
-        let alpha = 0.35;
+        let alpha = 0.18;
         if (dist < cfg.cursorRadius) {
           const proximity = 1 - dist / cfg.cursorRadius;
           const bulge = proximity * proximity * cfg.cursorForce * cfg.bulgeStrength * 0.01;
           radius = cfg.dotRadius * (1 + bulge * 3);
-          alpha = Math.min(1, 0.35 + proximity * 0.65);
+          alpha = Math.min(1, 0.18 + proximity * 0.75);
         }
         if (cfg.waveAmplitude > 0) {
           radius += Math.sin(t * 2 + x * 0.05 + y * 0.05) * cfg.waveAmplitude;
@@ -122,13 +216,13 @@ function initDotField(canvas, opts = {}) {
         if (dist < cfg.glowRadius) {
           const glowA = (1 - dist / cfg.glowRadius) * 0.25;
           const grd = ctx.createRadialGradient(x, y, 0, x, y, radius * 4);
-          grd.addColorStop(0, `rgba(34,197,94,${glowA})`);
-          grd.addColorStop(1, 'rgba(34,197,94,0)');
+          grd.addColorStop(0, `rgba(168,85,247,${glowA})`);
+          grd.addColorStop(1, 'rgba(168,85,247,0)');
           ctx.fillStyle = grd;
           ctx.beginPath(); ctx.arc(x, y, radius * 4, 0, Math.PI * 2); ctx.fill();
         }
 
-        ctx.fillStyle = `rgba(148,255,190,${alpha})`;
+        ctx.fillStyle = `rgba(216,180,254,${alpha})`;
         ctx.beginPath();
         ctx.arc(x, y, Math.max(0.4, radius), 0, Math.PI * 2);
         ctx.fill();

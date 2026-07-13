@@ -10,14 +10,18 @@
 
   <div class="card" style="z-index:3">
 
-    <!-- Animated logo -->
+    <!-- Animated logo (green-screen video, keyed live onto a transparent canvas) -->
     <a href="/" class="brand-logo-link" aria-label="BuzzXzone home">
-      <video src="{{ url_for('static', filename='logo.mp4') }}"
-             width="80" height="80" class="cyber-hero-logo brand-logo"
-             autoplay loop muted playsinline></video>
+      <video id="logo-video" src="{{ url_for('static', filename='logo.mp4') }}"
+             autoplay loop muted playsinline style="display:none"></video>
+      <canvas id="logo-canvas" width="90" height="90" class="cyber-hero-logo brand-logo"></canvas>
     </a>
 
-    <div class="card-title" style="margin-bottom:4px;">BuzzXzone</div>
+    <a href="/" aria-label="BuzzXzone home" style="display:block; margin: 4px auto 4px;">
+      <video id="wordmark-video" src="{{ url_for('static', filename='wordmark.mp4') }}"
+             autoplay loop muted playsinline style="display:none"></video>
+      <canvas id="wordmark-canvas" width="260" height="81" class="brand-wordmark"></canvas>
+    </a>
 
     <form method="POST">
       <div class="field">
@@ -52,5 +56,8 @@
     dotRadius: 1.5, dotSpacing: 14, cursorRadius: 500, cursorForce: 0.10,
     bulgeOnly: true, bulgeStrength: 67, glowRadius: 160, sparkle: false, waveAmplitude: 0,
   });
+  initChromaVideo(document.getElementById('logo-video'), document.getElementById('logo-canvas'));
+  initChromaVideo(document.getElementById('wordmark-video'), document.getElementById('wordmark-canvas'),
+    { width: 260, height: 81 });
 </script>
 {% endblock %}

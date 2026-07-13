@@ -8,27 +8,29 @@
 
 /* ── CSS Variables — vibrant forest theme ───────────────────── */
 :root {
-  --green:      #22c55e;
-  --lime:       #86efac;
-  --teal:       #06b6d4;
+  /* Primary theme is purple/black — variable names kept as-is (still widely
+     referenced below) but the values are now the purple palette, not green. */
+  --green:      #a855f7;
+  --lime:       #d8b4fe;
+  --teal:       #7c3aed;
   --yellow:     #fbbf24;
   --orange:     #fb923c;
   --red:        #f87171;
-  --sky:        #38bdf8;
+  --sky:        #c084fc;
   --purple:     #a855f7;
-  --dark:       #071a0f;
-  --mid:        #0e2d1a;
-  --surface:    #163825;
-  --card-bg:    rgba(34,197,94,0.07);
-  --card-bdr:   rgba(34,197,94,0.28);
-  --text:       #d4f5e0;
-  --muted:      rgba(180,240,200,0.55);
+  --dark:       #0a0714;
+  --mid:        #170f2b;
+  --surface:    #1f1638;
+  --card-bg:    rgba(168,85,247,0.08);
+  --card-bdr:   rgba(168,85,247,0.32);
+  --text:       #ece3fb;
+  --muted:      rgba(216,180,254,0.55);
   --font-head:  'Fredoka One', cursive;
   --font-body:  'Nunito', sans-serif;
   --radius:     14px;
   --shadow:     0 8px 32px rgba(0,0,0,0.55);
-  --glow-green: 0 0 22px rgba(34,197,94,0.45);
-  --glow-cyan:  0 0 22px rgba(6,182,212,0.4);
+  --glow-green: 0 0 22px rgba(168,85,247,0.5);
+  --glow-cyan:  0 0 22px rgba(124,58,237,0.4);
 }
 
 /* ── Reset & Base ──────────────────────────────────────────── */
@@ -38,7 +40,7 @@ html { font-size: 16px; }
 
 body {
   font-family: var(--font-body);
-  background: linear-gradient(145deg, var(--dark) 0%, #0a2218 45%, #071830 100%);
+  background: linear-gradient(145deg, var(--dark) 0%, #150c26 45%, #0a0714 100%);
   background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
@@ -1019,28 +1021,29 @@ a:hover { text-shadow: 0 0 8px var(--green); }
   50%       { filter: drop-shadow(0 0 24px rgba(232,121,249,1.0)); transform: scale(1.06); }
 }
 
-/* Animated video logo (login hero + sidebar) — clickable, with hover feedback.
-   The source clip has a bright/white backing; blending it against the dark
-   page background (multiply) sinks the white into the background and leaves
-   only the coloured mark visible, so it reads dark/green instead of glowing white. */
+/* Animated video logo/wordmark — the source clips are shot on a real green
+   screen and keyed live onto <canvas> by effects.js (initChromaVideo), so
+   the canvas itself is already just the mark on a transparent background.
+   No CSS blend-mode trick needed here. */
 .brand-logo-link {
   display: inline-block;
   line-height: 0;
-  border-radius: 50%;
-  background: #060d0a;
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 .brand-logo-link:hover,
 .brand-logo-link:focus-visible {
   transform: scale(1.08);
-  filter: drop-shadow(0 0 18px rgba(34,197,94,0.85));
+  filter: drop-shadow(0 0 18px rgba(168,85,247,0.85));
 }
 .brand-logo {
-  border-radius: 50%;
-  object-fit: cover;
   pointer-events: none; /* clicks go to the wrapping <a> */
-  mix-blend-mode: multiply;
-  filter: saturate(1.4) brightness(0.85);
+}
+.brand-wordmark {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  pointer-events: none;
 }
 
 /* Login subtitle glow */

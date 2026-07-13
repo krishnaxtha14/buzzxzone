@@ -9,9 +9,6 @@
 </head>
 <body>
 
-  <!-- Floating cyber background -->
-  <div class="leaf-bg" id="leaf-bg"></div>
-
   <!-- Global spark canvas (top layer, pointer-events:none) -->
   <canvas id="spark-canvas"></canvas>
 
@@ -19,30 +16,13 @@
 
   <script>
   /* ══════════════════════════════════════════════════════════════
-     CYBER · Floating background symbols
-  ══════════════════════════════════════════════════════════════ */
-  const CYBER_SYMBOLS = ['🌿','🍃','✨','🌱','⚡','💚','🌲','✦','🍀','🌾','💫','🌳','◆','🎋','✧'];
-  const bg = document.getElementById('leaf-bg');
-  for (let i = 0; i < 22; i++) {
-    const el = document.createElement('span');
-    el.className = 'leaf';
-    el.textContent = CYBER_SYMBOLS[Math.floor(Math.random() * CYBER_SYMBOLS.length)];
-    el.style.left              = Math.random() * 100 + 'vw';
-    el.style.animationDuration = (14 + Math.random() * 20) + 's';
-    el.style.animationDelay    = (-Math.random() * 22) + 's';
-    el.style.fontSize          = (0.9 + Math.random() * 1.2) + 'rem';
-    el.style.opacity           = '0';
-    bg.appendChild(el);
-  }
-
-  /* ══════════════════════════════════════════════════════════════
      CYBER · SPARK SYSTEM (all pages, all clicks/touches)
   ══════════════════════════════════════════════════════════════ */
   (function() {
     const sc  = document.getElementById('spark-canvas');
     const sCtx = sc.getContext('2d');
     const sparks = [];
-    const SPARK_COLORS = ['#22c55e','#86efac','#06b6d4','#fbbf24','#ffffff','#4ade80'];
+    const SPARK_COLORS = ['#a855f7','#c084fc','#7c3aed','#e879f9','#ffffff','#d8b4fe'];
 
     function resizeSpark() { sc.width = innerWidth; sc.height = innerHeight; }
     resizeSpark();
@@ -115,9 +95,9 @@
     const ctx    = canvas.getContext('2d');
 
     const TRAIL_COLORS = [
-      '#22c55e', '#4ade80', '#86efac',
-      '#06b6d4', '#38bdf8', '#fbbf24',
-      '#a3e635', '#34d399'
+      '#a855f7', '#c084fc', '#d8b4fe',
+      '#7c3aed', '#e879f9', '#f0abfc',
+      '#8b5cf6', '#6d28d9'
     ];
 
     const trail     = [];
