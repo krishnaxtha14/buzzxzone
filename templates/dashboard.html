@@ -62,10 +62,11 @@
 <style>
 .game-window {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  width: min(920px, calc(100vw - 48px));
-  height: min(640px, calc(100vh - 96px));
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1100px, calc(100vw - 48px));
+  height: min(720px, calc(100vh - 96px));
   background: #0b1410;
   border: 1px solid rgba(168,85,247,.35);
   border-radius: 12px;
@@ -78,10 +79,14 @@
 }
 .game-window.hidden { display: none; }
 .game-window.maximized {
-  right: 16px; bottom: 16px; left: 16px; top: 16px;
+  top: 16px; left: 16px; right: 16px; bottom: 16px;
+  transform: none;
   width: auto; height: auto;
 }
 .game-window.minimized {
+  top: auto; left: auto;
+  right: 24px; bottom: 24px;
+  transform: none;
   width: 280px;
   height: 44px;
 }
@@ -126,7 +131,7 @@
   background: #000;
 }
 @media (max-width: 640px) {
-  .game-window { right: 12px; left: 12px; bottom: 12px; width: auto; }
+  .game-window { top: 12px; left: 12px; right: 12px; bottom: 12px; transform: none; width: auto; height: auto; }
 }
 </style>
 {% endblock %}

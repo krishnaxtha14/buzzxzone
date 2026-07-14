@@ -122,7 +122,7 @@ function initSilk(canvas, opts = {}) {
 
   const { r, g, b } = hexToRgb(cfg.color);
   const ctx = canvas.getContext('2d');
-  const BUF = 160;
+  const BUF = 72; // small buffer + upscale — this is a slow ambient wash, not worth full-res
   const buf = document.createElement('canvas');
   buf.width = BUF; buf.height = BUF;
   const bctx = buf.getContext('2d');
@@ -130,7 +130,7 @@ function initSilk(canvas, opts = {}) {
   const E = Math.E;
   const rotSin = Math.sin(cfg.rotation);
   const rotCos = Math.cos(cfg.rotation);
-  let uTime = 0, lastTs = 0;
+  let uTime = 0, lastTs = 0, skip = 0;
 
   function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
   resize();
