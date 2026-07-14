@@ -86,14 +86,17 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 
 /* ── Card ──────────────────────────────────────────────────── */
 .card {
-  background: linear-gradient(145deg, rgba(26,16,45,.92) 0%, rgba(15,9,28,.95) 100%);
-  border: 1px solid var(--card-bdr);
+  /* Frosted glass — translucent neutral grey so the Silk/ColorBends
+     background reads through it, not a solid purple panel. */
+  background: linear-gradient(145deg, rgba(120,120,135,.12) 0%, rgba(50,50,60,.18) 100%);
+  border: 1px solid rgba(255,255,255,.14);
   border-radius: var(--radius);
   padding: 40px 36px;
   width: 100%;
   max-width: 440px;
-  box-shadow: var(--shadow), var(--glow-green);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 0 40px rgba(120,120,140,.12);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   animation: fadeUp 0.45s ease forwards;
   position: relative;
   overflow: hidden;
