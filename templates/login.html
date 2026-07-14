@@ -49,6 +49,12 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
 <script>
+  initDotField(document.getElementById('dot-field'), {
+    dotRadius: 1.5, dotSpacing: 24, cursorRadius: 400, cursorForce: 0.10,
+    bulgeOnly: true, bulgeStrength: 67, glowRadius: 160, sparkle: false, waveAmplitude: 0,
+    gradientFrom: 'rgba(150,150,160,0.22)', gradientTo: 'rgba(120,120,135,0.14)',
+    glowColor: 'rgba(200,200,215,0.5)',
+  });
   initChromaVideo(document.getElementById('logo-video'), document.getElementById('logo-canvas'));
   initChromaVideo(document.getElementById('wordmark-video'), document.getElementById('wordmark-canvas'),
     { width: 260, height: 81 });
