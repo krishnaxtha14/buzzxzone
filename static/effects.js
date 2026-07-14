@@ -365,6 +365,85 @@ function initTextPressure(container, opts = {}) {
   requestAnimationFrame(animate);
 }
 
+/* ── Shuffle text: splits text into per-character strips, each holding a
+   few scrambled glyphs followed by the real character, then slides the
+   strip so the real glyph lands in view — a "letters rolling into place"
+   entrance animation. Plays once the element scrolls into view. Built with
+   plain CSS transitions (no GSAP dependency) rather than a literal port. ── */
+function initShuffleText(el, opts = {}) {
+  const cfg = Object.assign({
+    direction: 'right', // right | left | up | down
+    duration: 450,      // ms per character
+    shuffleTimes: 3,    // scrambled glyphs shown before the real one
+    stagger: 40,        // ms between each character starting
+    scrambleCharset: '', // empty = just show the real char while sliding
+  }, opts);
+
+  const text = el.textContent;
+  el.textContent = '';
+  const isVertical = cfg.direction === 'up' || cfg.direction === 'down';
+  const reverse = cfg.direction === 'left' || cfg.direction === 'up';
+
+  const entries = text.split('').map(ch => {
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:inline-block; overflow:hidden; vertical-align:bottom;';
+    const strip = document.createElement('span');
+    strip.style.cssText = 'display:block; will-change:transform;';
+    wrap.appendChild(strip);
+
+    const glyphs = [];
+    for (let i = 0; i < cfg.shuffleTimes; i++) {
+      const g = document.createElement('span');
+      g.style.cssText = 'display:block;';
+      g.textContent = cfg.scrambleCharset
+        ? cfg.scrambleCharset[Math.floor(Math.random() * cfg.scrambleCharset.length)]
+        : (ch === ' ' ? ' ' : ch);
+      strip.appendChild(g);
+      glyphs.push(g);
+    }
+    const real = document.createElement('span');
+    real.style.cssText = 'display:block;';
+    real.textContent = ch === ' ' ? ' ' : ch;
+    strip.appendChild(real);
+    if (reverse) strip.insertBefore(real, strip.firstChild); // real glyph at the start instead
+
+    el.appendChild(wrap);
+    return { wrap, strip };
+  });
+
+  function arm() {
+    entries.forEach(({ wrap, strip }) => {
+      const glyphRect = strip.children[0].getBoundingClientRect();
+      const size = isVertical ? glyphRect.height : glyphRect.width;
+      wrap.style[isVertical ? 'height' : 'width'] = size + 'px';
+      const offset = reverse ? -cfg.shuffleTimes * size : -cfg.shuffleTimes * size;
+      strip.style.transition = 'none';
+      strip.style.transform = isVertical
+        ? `translateY(${reverse ? 0 : offset}px)`
+        : `translateX(${reverse ? 0 : offset}px)`;
+      if (reverse) strip.dataset.restTransform = isVertical ? `translateY(${offset}px)` : `translateX(${offset}px)`;
+      else strip.dataset.restTransform = isVertical ? 'translateY(0)' : 'translateX(0)';
+    });
+  }
+  arm();
+
+  function play() {
+    entries.forEach(({ strip }, i) => {
+      setTimeout(() => {
+        strip.style.transition = `transform ${cfg.duration}ms cubic-bezier(0.22,1,0.36,1)`;
+        strip.style.transform = strip.dataset.restTransform;
+      }, i * cfg.stagger);
+    });
+  }
+
+  const io = new IntersectionObserver((ents) => {
+    ents.forEach(e => {
+      if (e.isIntersecting) { play(); io.disconnect(); }
+    });
+  }, { threshold: 0.1 });
+  io.observe(el);
+}
+
 /* ── DotField: grid of dots that bulge away from the cursor, with a soft
    glow halo that only lights up while the cursor is actively moving nearby
    (an "engagement" value tracks recent mouse speed) — a static hover does

@@ -18,7 +18,7 @@
 
   <!-- Main -->
   <div class="main-content">
-    <div id="welcome-heading" style="height:64px; margin-bottom:4px;"></div>
+    <h1 id="welcome-heading" class="page-heading" style="margin-bottom:4px;">WELCOME {{ username|upper }}</h1>
     <p class="page-sub">🟢 ONLINE</p>
 
     <!-- Capybara Mascot -->
@@ -30,8 +30,8 @@
     <div class="game-grid">
       <div class="game-card">
         <div class="icon">🛡️</div>
-        <h3>EDUCATIONAL CYBERSECURITY GAME</h3>
-        <p>Learn to spot phishing, scams, and online threats in this interactive Godot game. Use W/A/S/D to drive.</p>
+        <h3>BUZZXZONE</h3>
+        <p>Race the neon streets, dodge traffic, and build your garage. Use W/A/S/D to drive.</p>
         <button type="button" class="play-btn play-green" id="open-game-btn">PLAY NOW →</button>
       </div>
     </div>
@@ -135,8 +135,8 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
 <script>
-  initTextPressure(document.getElementById('welcome-heading'), {
-    text: 'WELCOME {{ username|upper }}', minFontSize: 28, textColor: '#ece3fb',
+  initShuffleText(document.getElementById('welcome-heading'), {
+    direction: 'right', duration: 450, shuffleTimes: 3, stagger: 40,
   });
 </script>
 <script>
