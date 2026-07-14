@@ -149,35 +149,42 @@ function initSilk(canvas, opts = {}) {
     const delta = (ts - lastTs) / 1000;
     lastTs = ts;
     uTime += 0.1 * delta;
-    const tOffset = cfg.speed * uTime;
 
-    const d = img.data;
-    for (let py = 0; py < BUF; py++) {
-      const vUvY = py / BUF;
-      for (let px = 0; px < BUF; px++) {
-        const vUvX = px / BUF;
-        // uv = rotate(vUv * scale, rotation); tex = uv * scale
-        let ux = vUvX * cfg.scale, uy = vUvY * cfg.scale;
-        const rux = ux * rotCos - uy * rotSin;
-        const ruy = ux * rotSin + uy * rotCos;
-        let tx = rux * cfg.scale, ty = ruy * cfg.scale;
-        ty += 0.03 * Math.sin(8.0 * tx - tOffset);
+    // This is a slow ambient wash — recomputing the noise buffer at 60fps is
+    // wasted work. Recompute at ~20fps; the upscale draw still happens every
+    // frame so resizing/compositing stays smooth.
+    skip++;
+    if (skip >= 3) {
+      skip = 0;
+      const tOffset = cfg.speed * uTime;
+      const d = img.data;
+      for (let py = 0; py < BUF; py++) {
+        const vUvY = py / BUF;
+        for (let px = 0; px < BUF; px++) {
+          const vUvX = px / BUF;
+          // uv = rotate(vUv * scale, rotation); tex = uv * scale
+          let ux = vUvX * cfg.scale, uy = vUvY * cfg.scale;
+          const rux = ux * rotCos - uy * rotSin;
+          const ruy = ux * rotSin + uy * rotCos;
+          let tx = rux * cfg.scale, ty = ruy * cfg.scale;
+          ty += 0.03 * Math.sin(8.0 * tx - tOffset);
 
-        const pattern = 0.6 + 0.4 * Math.sin(
-          5.0 * (tx + ty + Math.cos(3.0 * tx + 5.0 * ty) + 0.02 * tOffset) +
-          Math.sin(20.0 * (tx + ty - 0.1 * tOffset))
-        );
-        const rnd = noise2(px, py); // gl_FragCoord.xy — screen-space pixel coords
-        const shade = pattern - (rnd / 15) * cfg.noiseIntensity;
+          const pattern = 0.6 + 0.4 * Math.sin(
+            5.0 * (tx + ty + Math.cos(3.0 * tx + 5.0 * ty) + 0.02 * tOffset) +
+            Math.sin(20.0 * (tx + ty - 0.1 * tOffset))
+          );
+          const rnd = noise2(px, py); // gl_FragCoord.xy — screen-space pixel coords
+          const shade = pattern - (rnd / 15) * cfg.noiseIntensity;
 
-        const i = (py * BUF + px) * 4;
-        d[i]     = Math.max(0, Math.min(255, r * shade));
-        d[i + 1] = Math.max(0, Math.min(255, g * shade));
-        d[i + 2] = Math.max(0, Math.min(255, b * shade));
-        d[i + 3] = 255;
+          const i = (py * BUF + px) * 4;
+          d[i]     = Math.max(0, Math.min(255, r * shade));
+          d[i + 1] = Math.max(0, Math.min(255, g * shade));
+          d[i + 2] = Math.max(0, Math.min(255, b * shade));
+          d[i + 3] = 255;
+        }
       }
+      bctx.putImageData(img, 0, 0);
     }
-    bctx.putImageData(img, 0, 0);
 
     const w = canvas.width, h = canvas.height;
     ctx.imageSmoothingEnabled = true;
