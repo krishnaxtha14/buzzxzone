@@ -265,73 +265,120 @@ function initTextPressure(container, opts = {}) {
   requestAnimationFrame(animate);
 }
 
-/* ── DotField: grid of dots that bulge near the cursor ── */
+/* ── DotField: grid of dots that bulge away from the cursor, with a soft
+   glow halo that only lights up while the cursor is actively moving nearby
+   (an "engagement" value tracks recent mouse speed) — a static hover does
+   nothing, a moving cursor makes the dots push aside and the halo shine. ── */
 function initDotField(canvas, opts = {}) {
   const cfg = Object.assign({
     dotRadius: 1.5, dotSpacing: 14, cursorRadius: 500, cursorForce: 0.10,
     bulgeOnly: true, bulgeStrength: 67, glowRadius: 160, sparkle: false, waveAmplitude: 0,
+    gradientFrom: 'rgba(168,85,247,0.35)', gradientTo: 'rgba(180,151,207,0.25)',
+    glowColor: 'rgba(216,180,254,0.9)',
   }, opts);
 
   const ctx = canvas.getContext('2d');
-  let mouse = { x: -9999, y: -9999 };
-  let t = 0;
+  const mouse = { x: -9999, y: -9999, prevX: -9999, prevY: -9999, speed: 0 };
+  let dots = [];
+  let engagement = 0, glowOpacity = 0, frameCount = 0;
 
-  function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  function buildDots(w, h) {
+    const step = cfg.dotRadius + cfg.dotSpacing;
+    const cols = Math.floor(w / step), rows = Math.floor(h / step);
+    const padX = (w % step) / 2, padY = (h % step) / 2;
+    dots = [];
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const ax = padX + col * step + step / 2;
+        const ay = padY + row * step + step / 2;
+        dots.push({ ax, ay, sx: ax, sy: ay });
+      }
+    }
+  }
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    buildDots(canvas.width, canvas.height);
+  }
   resize();
   window.addEventListener('resize', resize);
-  canvas.addEventListener('mousemove', e => {
+  window.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top;
-  });
-  canvas.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
-  canvas.addEventListener('touchmove', e => {
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
     mouse.x = touch.clientX - rect.left; mouse.y = touch.clientY - rect.top;
   }, { passive: true });
 
+  setInterval(() => {
+    const dx = mouse.prevX - mouse.x, dy = mouse.prevY - mouse.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    mouse.speed += (dist - mouse.speed) * 0.5;
+    if (mouse.speed < 0.001) mouse.speed = 0;
+    mouse.prevX = mouse.x; mouse.prevY = mouse.y;
+  }, 20);
+
   function frame() {
+    frameCount++;
     const w = canvas.width, h = canvas.height;
+    const t = frameCount * 0.02;
+
+    const targetEngagement = Math.min(mouse.speed / 5, 1);
+    engagement += (targetEngagement - engagement) * 0.06;
+    if (engagement < 0.001) engagement = 0;
+    glowOpacity += (engagement - glowOpacity) * 0.08;
+
     ctx.clearRect(0, 0, w, h);
-    const cols = Math.ceil(w / cfg.dotSpacing) + 1;
-    const rows = Math.ceil(h / cfg.dotSpacing) + 1;
 
-    for (let cx = 0; cx < cols; cx++) {
-      for (let cy = 0; cy < rows; cy++) {
-        const x = cx * cfg.dotSpacing;
-        const y = cy * cfg.dotSpacing;
-        const dx = x - mouse.x, dy = y - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        let radius = cfg.dotRadius;
-        let alpha = 0.18;
-        if (dist < cfg.cursorRadius) {
-          const proximity = 1 - dist / cfg.cursorRadius;
-          const bulge = proximity * proximity * cfg.cursorForce * cfg.bulgeStrength * 0.01;
-          radius = cfg.dotRadius * (1 + bulge * 3);
-          alpha = Math.min(1, 0.18 + proximity * 0.75);
-        }
-        if (cfg.waveAmplitude > 0) {
-          radius += Math.sin(t * 2 + x * 0.05 + y * 0.05) * cfg.waveAmplitude;
-        }
-
-        if (dist < cfg.glowRadius) {
-          const glowA = (1 - dist / cfg.glowRadius) * 0.25;
-          const grd = ctx.createRadialGradient(x, y, 0, x, y, radius * 4);
-          grd.addColorStop(0, `rgba(168,85,247,${glowA})`);
-          grd.addColorStop(1, 'rgba(168,85,247,0)');
-          ctx.fillStyle = grd;
-          ctx.beginPath(); ctx.arc(x, y, radius * 4, 0, Math.PI * 2); ctx.fill();
-        }
-
-        ctx.fillStyle = `rgba(216,180,254,${alpha})`;
-        ctx.beginPath();
-        ctx.arc(x, y, Math.max(0.4, radius), 0, Math.PI * 2);
-        ctx.fill();
-      }
+    // Glow halo — only shines while the cursor is moving nearby
+    if (glowOpacity > 0.01) {
+      const grd = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, cfg.glowRadius);
+      grd.addColorStop(0, cfg.glowColor.replace(/[\d.]+\)$/, (glowOpacity * 0.9).toFixed(3) + ')'));
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
     }
-    t += 0.016;
+
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, cfg.gradientFrom);
+    grad.addColorStop(1, cfg.gradientTo);
+    ctx.fillStyle = grad;
+
+    const crSq = cfg.cursorRadius * cfg.cursorRadius;
+    const rad = Math.max(0.4, cfg.dotRadius / 2);
+
+    ctx.beginPath();
+    for (const d of dots) {
+      const dx = mouse.x - d.ax, dy = mouse.y - d.ay;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < crSq && engagement > 0.01) {
+        const dist = Math.sqrt(distSq);
+        const tt = 1 - dist / cfg.cursorRadius;
+        const push = tt * tt * cfg.bulgeStrength * engagement;
+        const angle = Math.atan2(dy, dx);
+        d.sx += (d.ax - Math.cos(angle) * push - d.sx) * 0.15;
+        d.sy += (d.ay - Math.sin(angle) * push - d.sy) * 0.15;
+      } else {
+        d.sx += (d.ax - d.sx) * 0.1;
+        d.sy += (d.ay - d.sy) * 0.1;
+      }
+
+      let drawX = d.sx, drawY = d.sy;
+      if (cfg.waveAmplitude > 0) {
+        drawY += Math.sin(d.ax * 0.03 + t) * cfg.waveAmplitude;
+        drawX += Math.cos(d.ay * 0.03 + t * 0.7) * cfg.waveAmplitude * 0.5;
+      }
+
+      ctx.moveTo(drawX + rad, drawY);
+      ctx.arc(drawX, drawY, rad, 0, Math.PI * 2);
+    }
+    ctx.fill();
+
     requestAnimationFrame(frame);
   }
-  frame();
+  requestAnimationFrame(frame);
 }

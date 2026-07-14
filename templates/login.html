@@ -5,22 +5,24 @@
 <div class="page-wrap">
 
   <!-- Background effects: silk texture base + soft flowing colour wash + interactive dot field -->
-  <canvas id="silk-bg"     style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
-  <canvas id="color-bends" style="position:fixed;inset:0;z-index:1;pointer-events:none;"></canvas>
-  <canvas id="dot-field"   style="position:fixed;inset:0;z-index:2;"></canvas>
+  <canvas id="silk-bg"     style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+  <canvas id="color-bends" style="position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;"></canvas>
+  <canvas id="dot-field"   style="position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;"></canvas>
 
   <div class="card" style="z-index:3">
 
     <!-- Animated logo (green-screen video, keyed live onto a transparent canvas) -->
     <a href="/" class="brand-logo-link" aria-label="BuzzXzone home">
       <video id="logo-video" src="{{ url_for('static', filename='logo.mp4') }}"
-             autoplay loop muted playsinline style="display:none"></video>
+             autoplay loop muted playsinline
+             style="position:absolute; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
       <canvas id="logo-canvas" width="90" height="90" class="cyber-hero-logo brand-logo"></canvas>
     </a>
 
     <a href="/" aria-label="BuzzXzone home" style="display:block; margin: 4px auto 4px;">
       <video id="wordmark-video" src="{{ url_for('static', filename='wordmark.mp4') }}"
-             autoplay loop muted playsinline style="display:none"></video>
+             autoplay loop muted playsinline
+             style="position:absolute; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
       <canvas id="wordmark-canvas" width="260" height="81" class="brand-wordmark"></canvas>
     </a>
 
