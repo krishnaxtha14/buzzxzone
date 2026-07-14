@@ -71,7 +71,11 @@ function initColorBends(canvas, opts = {}) {
   });
 
   const ctx = canvas.getContext('2d');
-  const BUF = 90;
+  // The warp field has real fine-grained texture in it — too small a buffer
+  // under-samples that detail and upscaling just smears it into a blurry
+  // blob instead of a defined flowing pattern. This needs to be big enough
+  // to actually resolve the pattern; the frame-skip below pays for it.
+  const BUF = 200;
   const buf = document.createElement('canvas');
   buf.width = BUF; buf.height = BUF;
   const bctx = buf.getContext('2d');
@@ -107,7 +111,7 @@ function initColorBends(canvas, opts = {}) {
     pointer.y += (pointerTarget.y - pointer.y) * Math.min(1, dt * 8);
 
     skip++;
-    if (skip >= 2) { // recompute at ~half framerate — plenty for a slow ambient field
+    if (skip >= 3) { // recompute at ~20fps — it's a slow ambient field, doesn't need 60fps
       skip = 0;
       const t = elapsed * cfg.speed;
       const aspect = canvas.width / Math.max(1, canvas.height);
@@ -186,6 +190,7 @@ function initColorBends(canvas, opts = {}) {
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
     ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(buf, 0, 0, w, h);
 
     requestAnimationFrame(frame);
