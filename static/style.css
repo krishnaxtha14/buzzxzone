@@ -1118,6 +1118,19 @@ a:hover { text-shadow: 0 0 8px var(--green); }
 }
 @keyframes headingShimmer { to { background-position: 200% center; } }
 
+/* The gradient/clip-text treatment above only works when the heading holds
+   its text directly — Shuffle wraps every letter in its own nested spans,
+   which breaks background-clip:text (transparent fill, no gradient behind
+   each fragment = invisible glyphs). Reset to a plain solid colour here. */
+#welcome-heading {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
+  color: var(--green);
+  animation: none;
+}
+
 .page-sub { color: var(--muted); font-size: .85rem; letter-spacing: 2px; margin-bottom: 28px; }
 
 /* Staggered card entrance */

@@ -380,10 +380,17 @@ function initShuffleText(el, opts = {}) {
   }, opts);
 
   const text = el.textContent;
-  el.textContent = '';
   const isVertical = cfg.direction === 'up' || cfg.direction === 'down';
   const reverse = cfg.direction === 'left' || cfg.direction === 'up';
 
+  // Building/measuring character boxes before the real font has loaded bakes
+  // in wrong widths (falls back to a system font momentarily) — every glyph
+  // then gets clipped once the real font swaps in. Wait for it first.
+  const fontsReady = ('fonts' in document) ? document.fonts.ready : Promise.resolve();
+  fontsReady.then(buildShuffle);
+
+  function buildShuffle() {
+  el.textContent = '';
   const entries = text.split('').map(ch => {
     const wrap = document.createElement('span');
     wrap.style.cssText = 'display:inline-block; overflow:hidden; vertical-align:bottom;';
@@ -442,6 +449,7 @@ function initShuffleText(el, opts = {}) {
     });
   }, { threshold: 0.1 });
   io.observe(el);
+  }
 }
 
 /* ── DotField: grid of dots that bulge away from the cursor, with a soft
