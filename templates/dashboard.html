@@ -2,7 +2,6 @@
 {% block title %}Dashboard · Cyber{% endblock %}
 
 {% block body %}
-<canvas id="silk-bg" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
 <div class="app-wrap" style="position:relative; z-index:1;">
 
   <!-- Sidebar -->
@@ -140,9 +139,6 @@
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
 <script>
   initChromaVideo(document.getElementById('sidebar-logo-video'), document.getElementById('sidebar-logo-canvas'));
-  initSilk(document.getElementById('silk-bg'), {
-    color: '#49586e', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
-  });
   initTextPressure(document.getElementById('welcome-heading'), {
     text: 'WELCOME {{ username|upper }}', minFontSize: 28, textColor: '#ece3fb',
   });
