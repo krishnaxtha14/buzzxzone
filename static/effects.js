@@ -28,9 +28,14 @@ function initChromaVideo(video, canvas, opts = {}) {
   canvas.width = cfg.width;
   canvas.height = cfg.height;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let skip = 0;
 
   function frame() {
-    if (video.readyState >= 2) {
+    // getImageData/putImageData are real work every call — this is a small
+    // looping decorative logo, it doesn't need re-keying at full 60fps.
+    skip++;
+    if (video.readyState >= 2 && skip >= 2) {
+      skip = 0;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = img.data;

@@ -9,19 +9,15 @@
 
   <div class="card" style="z-index:3">
 
-    <!-- Animated logo (green-screen video, keyed live onto a transparent canvas) -->
+    <!-- Static logo (pre-keyed transparent PNG — no live video/canvas processing) -->
     <a href="/" class="brand-logo-link" aria-label="BuzzXzone home">
-      <video id="logo-video" src="{{ url_for('static', filename='logo.mp4') }}"
-             autoplay loop muted playsinline
-             style="position:absolute; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
-      <canvas id="logo-canvas" width="90" height="90" class="cyber-hero-logo brand-logo"></canvas>
+      <img src="{{ url_for('static', filename='logo.png') }}" width="90" height="90"
+           class="cyber-hero-logo brand-logo" alt="BuzzXzone logo">
     </a>
 
     <a href="/" aria-label="BuzzXzone home" style="display:block; margin: 4px auto 4px;">
-      <video id="wordmark-video" src="{{ url_for('static', filename='wordmark.mp4') }}"
-             autoplay loop muted playsinline
-             style="position:absolute; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
-      <canvas id="wordmark-canvas" width="260" height="81" class="brand-wordmark"></canvas>
+      <img src="{{ url_for('static', filename='wordmark.png') }}" width="340" height="106"
+           class="brand-wordmark" alt="BuzzXzone">
     </a>
 
     <form method="POST">
@@ -54,8 +50,5 @@
     bulgeOnly: true, bulgeStrength: 67, sparkle: false, waveAmplitude: 0,
     dotColor: 'rgba(205,205,218,0.6)',
   });
-  initChromaVideo(document.getElementById('logo-video'), document.getElementById('logo-canvas'));
-  initChromaVideo(document.getElementById('wordmark-video'), document.getElementById('wordmark-canvas'),
-    { width: 260, height: 81 });
 </script>
 {% endblock %}

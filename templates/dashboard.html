@@ -8,11 +8,8 @@
   <nav class="sidebar">
     <div class="sidebar-logo">
       <a href="/dashboard" class="brand-logo-link" aria-label="BuzzXzone home" style="vertical-align:middle;">
-        <video id="sidebar-logo-video" src="{{ url_for('static', filename='logo.mp4') }}"
-               autoplay loop muted playsinline
-               style="position:absolute; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
-        <canvas id="sidebar-logo-canvas" width="36" height="36" class="brand-logo"
-                style="vertical-align:middle;margin-right:8px;"></canvas>
+        <img src="{{ url_for('static', filename='logo.png') }}" width="36" height="36"
+             class="brand-logo" style="vertical-align:middle;margin-right:8px;" alt="BuzzXzone logo">
       </a>
     </div>
     <a href="/dashboard" class="active">🏠 Dashboard</a>
@@ -138,7 +135,6 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
 <script>
-  initChromaVideo(document.getElementById('sidebar-logo-video'), document.getElementById('sidebar-logo-canvas'));
   initTextPressure(document.getElementById('welcome-heading'), {
     text: 'WELCOME {{ username|upper }}', minFontSize: 28, textColor: '#ece3fb',
   });
