@@ -366,16 +366,15 @@ function initTextPressure(container, opts = {}) {
    nothing, a moving cursor makes the dots push aside and the halo shine. ── */
 function initDotField(canvas, opts = {}) {
   const cfg = Object.assign({
-    dotRadius: 1.5, dotSpacing: 14, cursorRadius: 500, cursorForce: 0.10,
-    bulgeOnly: true, bulgeStrength: 67, glowRadius: 160, sparkle: false, waveAmplitude: 0,
-    gradientFrom: 'rgba(168,85,247,0.35)', gradientTo: 'rgba(180,151,207,0.25)',
-    glowColor: 'rgba(216,180,254,0.9)',
+    dotRadius: 2, dotSpacing: 14, cursorRadius: 500, cursorForce: 0.10,
+    bulgeOnly: true, bulgeStrength: 67, sparkle: false, waveAmplitude: 0,
+    dotColor: 'rgba(200,200,212,0.55)',
   }, opts);
 
   const ctx = canvas.getContext('2d');
   const mouse = { x: -9999, y: -9999, prevX: -9999, prevY: -9999, speed: 0 };
   let dots = [];
-  let engagement = 0, glowOpacity = 0, frameCount = 0;
+  let engagement = 0, frameCount = 0;
 
   function buildDots(w, h) {
     const step = cfg.dotRadius + cfg.dotSpacing;
@@ -416,6 +415,10 @@ function initDotField(canvas, opts = {}) {
     mouse.prevX = mouse.x; mouse.prevY = mouse.y;
   }, 20);
 
+  // Dots are a single flat colour now — no glow halo, no per-frame gradient
+  // rebuild — just the grid pushing away from a moving cursor. Cheap.
+  ctx.fillStyle = cfg.dotColor;
+
   function frame() {
     frameCount++;
     const w = canvas.width, h = canvas.height;
@@ -424,26 +427,11 @@ function initDotField(canvas, opts = {}) {
     const targetEngagement = Math.min(mouse.speed / 5, 1);
     engagement += (targetEngagement - engagement) * 0.06;
     if (engagement < 0.001) engagement = 0;
-    glowOpacity += (engagement - glowOpacity) * 0.08;
 
     ctx.clearRect(0, 0, w, h);
 
-    // Glow halo — only shines while the cursor is moving nearby
-    if (glowOpacity > 0.01) {
-      const grd = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, cfg.glowRadius);
-      grd.addColorStop(0, cfg.glowColor.replace(/[\d.]+\)$/, (glowOpacity * 0.9).toFixed(3) + ')'));
-      grd.addColorStop(1, 'transparent');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, cfg.gradientFrom);
-    grad.addColorStop(1, cfg.gradientTo);
-    ctx.fillStyle = grad;
-
     const crSq = cfg.cursorRadius * cfg.cursorRadius;
-    const rad = Math.max(0.4, cfg.dotRadius / 2);
+    const rad = Math.max(0.4, cfg.dotRadius);
 
     ctx.beginPath();
     for (const d of dots) {
