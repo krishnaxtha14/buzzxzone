@@ -21,7 +21,7 @@
 
   <!-- Main -->
   <div class="main-content">
-    <h1 class="page-heading">WELCOME BACK, {{ username }}!</h1>
+    <div id="welcome-heading" style="height:64px; margin-bottom:4px;"></div>
     <p class="page-sub">🟢 ONLINE</p>
 
     <!-- Capybara Mascot -->
@@ -136,6 +136,9 @@
   initChromaVideo(document.getElementById('sidebar-logo-video'), document.getElementById('sidebar-logo-canvas'));
   initSilk(document.getElementById('silk-bg'), {
     color: '#49586e', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
+  });
+  initTextPressure(document.getElementById('welcome-heading'), {
+    text: 'WELCOME {{ username|upper }}', minFontSize: 28, textColor: '#ece3fb',
   });
 </script>
 <script>

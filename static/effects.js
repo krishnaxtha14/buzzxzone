@@ -188,6 +188,83 @@ function initSilk(canvas, opts = {}) {
   requestAnimationFrame(frame);
 }
 
+/* ── TextPressure: a heading whose per-letter weight/width/slant reacts to
+   cursor proximity, via a variable font's font-variation-settings axes.
+   Uses Roboto Flex (hosted free on Google Fonts) since it actually exposes
+   wght/wdth axes — most fonts don't, so this needs a variable font. ── */
+function initTextPressure(container, opts = {}) {
+  const cfg = Object.assign({
+    text: 'BUZZXZONE',
+    minFontSize: 36,
+    textColor: '#ece3fb',
+    width: true, weight: true, italic: true,
+  }, opts);
+
+  if (!document.getElementById('text-pressure-font')) {
+    const link = document.createElement('link');
+    link.id = 'text-pressure-font';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&display=swap';
+    document.head.appendChild(link);
+  }
+
+  container.style.position = 'relative';
+  container.style.width = '100%';
+  const title = document.createElement('h1');
+  title.style.cssText = `font-family:'Roboto Flex',sans-serif; text-transform:uppercase; ` +
+    `margin:0; text-align:center; user-select:none; white-space:nowrap; ` +
+    `font-weight:100; width:100%; color:${cfg.textColor}; display:flex; justify-content:space-between;`;
+  container.appendChild(title);
+
+  const spans = cfg.text.split('').map(ch => {
+    const span = document.createElement('span');
+    span.textContent = ch;
+    span.style.display = 'inline-block';
+    title.appendChild(span);
+    return span;
+  });
+
+  function setSize() {
+    const w = container.getBoundingClientRect().width;
+    title.style.fontSize = Math.max(w / (spans.length / 2), cfg.minFontSize) + 'px';
+  }
+  setSize();
+  window.addEventListener('resize', setSize);
+
+  const mouse  = { x: innerWidth / 2, y: innerHeight / 2 };
+  const cursor = { x: mouse.x, y: mouse.y };
+  addEventListener('mousemove', e => { cursor.x = e.clientX; cursor.y = e.clientY; }, { passive: true });
+  addEventListener('touchmove', e => {
+    const t = e.touches[0]; cursor.x = t.clientX; cursor.y = t.clientY;
+  }, { passive: true });
+
+  function attrAt(distance, maxDist, minVal, maxVal) {
+    const v = maxVal - Math.abs(maxVal * distance / maxDist);
+    return Math.max(minVal, v + minVal);
+  }
+
+  function animate() {
+    mouse.x += (cursor.x - mouse.x) / 15;
+    mouse.y += (cursor.y - mouse.y) / 15;
+
+    const titleRect = title.getBoundingClientRect();
+    const maxDist = titleRect.width / 2;
+
+    for (const span of spans) {
+      const r = span.getBoundingClientRect();
+      const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+      const d = Math.sqrt((mouse.x - cx) ** 2 + (mouse.y - cy) ** 2);
+
+      const wdth = cfg.width  ? Math.floor(attrAt(d, maxDist, 5, 200))  : 100;
+      const wght = cfg.weight ? Math.floor(attrAt(d, maxDist, 100, 900)) : 400;
+      const ital = cfg.italic ? attrAt(d, maxDist, 0, 1).toFixed(2) : 0;
+      span.style.fontVariationSettings = `'wght' ${wght}, 'wdth' ${wdth}, 'ital' ${ital}`;
+    }
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+}
+
 /* ── DotField: grid of dots that bulge near the cursor ── */
 function initDotField(canvas, opts = {}) {
   const cfg = Object.assign({
