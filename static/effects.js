@@ -52,62 +52,145 @@ function initChromaVideo(video, canvas, opts = {}) {
   frame();
 }
 
-/* ── ColorBends: soft flowing colour bands, rotated, fading out near the top ── */
+/* ── ColorBends: 1:1 port of reactbits.dev's ColorBends fragment shader
+   (originally Three.js/GLSL — ported to canvas 2D since this app has no
+   WebGL build pipeline). A continuous per-pixel domain-warp field, not
+   discrete gradient bands, which is what makes it read as truly flowing
+   instead of a stack of blurry rectangles. ── */
 function initColorBends(canvas, opts = {}) {
   const cfg = Object.assign({
-    color: '#A855F7', speed: 0.2, frequency: 1.0, noise: 0.15,
-    bandWidth: 0.14, rotation: 90, fadeTop: 0.75, iterations: 1, intensity: 1.3,
+    rotation: 90, speed: 0.2, colors: ['#A855F7'], scale: 1, frequency: 1,
+    warpStrength: 1, mouseInfluence: 1, parallax: 0.5, noise: 0.15,
+    iterations: 1, intensity: 1.5, bandWidth: 6, transparent: true,
   }, opts);
+  if (cfg.color && !opts.colors) cfg.colors = [cfg.color]; // accept singular `color` too
+
+  const colorVecs = cfg.colors.map(hex => {
+    const c = hexToRgb(hex);
+    return [c.r / 255, c.g / 255, c.b / 255];
+  });
 
   const ctx = canvas.getContext('2d');
-  const { r, g, b } = hexToRgb(cfg.color);
-  let t = 0;
+  const BUF = 90;
+  const buf = document.createElement('canvas');
+  buf.width = BUF; buf.height = BUF;
+  const bctx = buf.getContext('2d');
+  const img = bctx.createImageData(BUF, BUF);
+
+  const pointer = { x: 0, y: 0 };
+  const pointerTarget = { x: 0, y: 0 };
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    pointerTarget.x = ((e.clientX - rect.left) / (rect.width || 1)) * 2 - 1;
+    pointerTarget.y = -(((e.clientY - rect.top) / (rect.height || 1)) * 2 - 1);
+  }, { passive: true });
 
   function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
   resize();
   window.addEventListener('resize', resize);
 
-  function frame() {
+  const rotRad = cfg.rotation * Math.PI / 180;
+  const rotX = Math.cos(rotRad), rotY = Math.sin(rotRad);
+  const kBelow = Math.max(0, Math.min(1, cfg.warpStrength));
+  const kMix = Math.pow(kBelow, 0.3);
+  const gain = 1 + Math.max(cfg.warpStrength - 1, 0);
+  const warpIters = Math.min(Math.max(cfg.iterations - 1, 0), 5);
+
+  let elapsed = 0, lastTs = 0, skip = 0;
+
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    elapsed += dt;
+    pointer.x += (pointerTarget.x - pointer.x) * Math.min(1, dt * 8);
+    pointer.y += (pointerTarget.y - pointer.y) * Math.min(1, dt * 8);
+
+    skip++;
+    if (skip >= 2) { // recompute at ~half framerate — plenty for a slow ambient field
+      skip = 0;
+      const t = elapsed * cfg.speed;
+      const aspect = canvas.width / Math.max(1, canvas.height);
+      const d = img.data;
+
+      for (let py = 0; py < BUF; py++) {
+        const vy = py / BUF;
+        for (let px = 0; px < BUF; px++) {
+          const vx = px / BUF;
+          let px_ = vx * 2 - 1, py_ = vy * 2 - 1;
+          px_ += pointer.x * cfg.parallax * 0.1;
+          py_ += pointer.y * cfg.parallax * 0.1;
+
+          const rpx = px_ * rotX - py_ * rotY;
+          const rpy = px_ * rotY + py_ * rotX;
+
+          let qx = rpx * aspect / Math.max(cfg.scale, 0.0001);
+          let qy = rpy / Math.max(cfg.scale, 0.0001);
+          const denom = 0.5 + 0.2 * (qx * qx + qy * qy);
+          qx /= denom; qy /= denom;
+          qx += 0.2 * Math.cos(t) - 7.56;
+
+          qx += (pointer.x - rpx) * cfg.mouseInfluence * 0.2;
+          qy += (pointer.y - rpy) * cfg.mouseInfluence * 0.2;
+
+          for (let j = 0; j < warpIters; j++) {
+            const rrx = Math.sin(1.5 * (qy * cfg.frequency) + 2 * Math.cos(qx * cfg.frequency));
+            const rry = Math.sin(1.5 * (qx * cfg.frequency) + 2 * Math.cos(qy * cfg.frequency));
+            qx += (rrx - qx) * 0.15;
+            qy += (rry - qy) * 0.15;
+          }
+
+          let sx = qx, sy = qy;
+          let colR = 0, colG = 0, colB = 0;
+          for (let i = 0; i < colorVecs.length; i++) {
+            sx -= 0.01; sy -= 0.01;
+            const rx = Math.sin(1.5 * (sy * cfg.frequency) + 2 * Math.cos(sx * cfg.frequency));
+            const ry = Math.sin(1.5 * (sx * cfg.frequency) + 2 * Math.cos(sy * cfg.frequency));
+            const s0 = Math.sin(5 * ry * cfg.frequency - 3 * t + i) / 4;
+            const m0 = Math.hypot(rx + s0, ry + s0);
+
+            const dispX = (rx - sx) * kBelow, dispY = (ry - sy) * kBelow;
+            const wx = sx + dispX * gain, wy = sy + dispY * gain;
+            const s1 = Math.sin(5 * wy * cfg.frequency - 3 * t + i) / 4;
+            const m1 = Math.hypot(wx + s1, wy + s1);
+
+            const m = m0 + (m1 - m0) * kMix;
+            const w = 1 - Math.exp(-cfg.bandWidth / Math.exp(cfg.bandWidth * m));
+            const [cr, cg, cb] = colorVecs[i];
+            colR += cr * w; colG += cg * w; colB += cb * w;
+          }
+          colR = Math.min(1, Math.max(0, colR)) * cfg.intensity;
+          colG = Math.min(1, Math.max(0, colG)) * cfg.intensity;
+          colB = Math.min(1, Math.max(0, colB)) * cfg.intensity;
+
+          if (cfg.noise > 0.0001) {
+            const n = Math.sin((px + t * 60) * 12.9898 + (py + t * 60) * 78.233) * 43758.5453;
+            const nf = n - Math.floor(n);
+            const nn = (nf - 0.5) * cfg.noise;
+            colR = Math.min(1, Math.max(0, colR + nn));
+            colG = Math.min(1, Math.max(0, colG + nn));
+            colB = Math.min(1, Math.max(0, colB + nn));
+          }
+
+          const alpha = cfg.transparent ? Math.max(colR, colG, colB) : 1;
+          const i4 = (py * BUF + px) * 4;
+          d[i4]     = colR * 255;
+          d[i4 + 1] = colG * 255;
+          d[i4 + 2] = colB * 255;
+          d[i4 + 3] = alpha * 255;
+        }
+      }
+      bctx.putImageData(img, 0, 0);
+    }
+
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(cfg.rotation * Math.PI / 180);
-    const diag = Math.sqrt(w * w + h * h);
-    ctx.translate(-diag / 2, -diag / 2);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(buf, 0, 0, w, h);
 
-    const bandH = diag * cfg.bandWidth;
-    const nBands = Math.ceil(diag / bandH) + 2;
-    for (let iter = 0; iter < cfg.iterations; iter++) {
-      for (let i = -1; i < nBands; i++) {
-        const phase = i * cfg.frequency + t * cfg.speed + iter * 1.7;
-        const wobble = Math.sin(phase) * (1 + Math.sin(phase * 2.3) * cfg.noise);
-        const y = i * bandH + wobble * bandH * 0.5;
-        const alpha = (0.5 + 0.5 * Math.sin(phase)) * 0.16 * cfg.intensity / cfg.iterations;
-        const grd = ctx.createLinearGradient(0, y, 0, y + bandH);
-        grd.addColorStop(0,   `rgba(${r},${g},${b},0)`);
-        grd.addColorStop(0.5, `rgba(${r},${g},${b},${alpha})`);
-        grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, y, diag, bandH);
-      }
-    }
-    ctx.restore();
-
-    // Fade out toward the top of the real canvas
-    if (cfg.fadeTop > 0) {
-      const fadeH = h * cfg.fadeTop;
-      const fg = ctx.createLinearGradient(0, 0, 0, fadeH);
-      fg.addColorStop(0, 'rgba(5,8,14,1)');
-      fg.addColorStop(1, 'rgba(5,8,14,0)');
-      ctx.fillStyle = fg;
-      ctx.fillRect(0, 0, w, fadeH);
-    }
-
-    t += 0.016;
     requestAnimationFrame(frame);
   }
-  frame();
+  requestAnimationFrame(frame);
 }
 
 /* ── Silk: 1:1 port of reactbits.dev's Silk component fragment shader

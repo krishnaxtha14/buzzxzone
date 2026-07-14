@@ -55,12 +55,15 @@
     color: '#49586e', speed: 5, scale: 1, noiseIntensity: 1.5, rotation: 0,
   });
   initColorBends(document.getElementById('color-bends'), {
-    color: '#A855F7', speed: 0.2, frequency: 1.0, noise: 0.15,
-    bandWidth: 0.14, rotation: 90, fadeTop: 0.75, iterations: 1, intensity: 1.3,
+    colors: ['#A855F7'], speed: 0.2, frequency: 1.0, noise: 0.15,
+    scale: 1, warpStrength: 1, mouseInfluence: 0.6, parallax: 0.4,
+    bandWidth: 6, rotation: 90, iterations: 1, intensity: 1.5, transparent: true,
   });
   initDotField(document.getElementById('dot-field'), {
     dotRadius: 1.5, dotSpacing: 24, cursorRadius: 400, cursorForce: 0.10,
     bulgeOnly: true, bulgeStrength: 67, glowRadius: 160, sparkle: false, waveAmplitude: 0,
+    gradientFrom: 'rgba(150,150,160,0.22)', gradientTo: 'rgba(120,120,135,0.14)',
+    glowColor: 'rgba(200,200,215,0.5)',
   });
   initChromaVideo(document.getElementById('logo-video'), document.getElementById('logo-canvas'));
   initChromaVideo(document.getElementById('wordmark-video'), document.getElementById('wordmark-canvas'),
