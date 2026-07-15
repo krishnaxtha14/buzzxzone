@@ -395,7 +395,10 @@ function initShuffleText(el, opts = {}) {
     const wrap = document.createElement('span');
     wrap.style.cssText = 'display:inline-block; overflow:hidden; vertical-align:bottom;';
     const strip = document.createElement('span');
-    strip.style.cssText = 'display:block; will-change:transform;';
+    // flex, not block — block-level glyphs stack as separate lines, which is
+    // only right for the vertical (up/down) case. flex-direction lays them
+    // out along whichever axis this direction actually animates on.
+    strip.style.cssText = `display:flex; flex-direction:${isVertical ? 'column' : 'row'}; will-change:transform;`;
     wrap.appendChild(strip);
 
     const glyphs = [];
@@ -423,13 +426,16 @@ function initShuffleText(el, opts = {}) {
       const glyphRect = strip.children[0].getBoundingClientRect();
       const size = isVertical ? glyphRect.height : glyphRect.width;
       wrap.style[isVertical ? 'height' : 'width'] = size + 'px';
-      const offset = reverse ? -cfg.shuffleTimes * size : -cfg.shuffleTimes * size;
+      // reverse (left/up) puts the real glyph first in the strip, so its
+      // resting position is 0 and it starts offset; right/down is the
+      // opposite. Getting these swapped shows the real glyph immediately
+      // and "shuffles" into a scrambled one instead of landing on it.
+      const offset = -cfg.shuffleTimes * size;
+      const startTransform = reverse ? offset : 0;
+      const restTransform = reverse ? 0 : offset;
       strip.style.transition = 'none';
-      strip.style.transform = isVertical
-        ? `translateY(${reverse ? 0 : offset}px)`
-        : `translateX(${reverse ? 0 : offset}px)`;
-      if (reverse) strip.dataset.restTransform = isVertical ? `translateY(${offset}px)` : `translateX(${offset}px)`;
-      else strip.dataset.restTransform = isVertical ? 'translateY(0)' : 'translateX(0)';
+      strip.style.transform = isVertical ? `translateY(${startTransform}px)` : `translateX(${startTransform}px)`;
+      strip.dataset.restTransform = isVertical ? `translateY(${restTransform}px)` : `translateX(${restTransform}px)`;
     });
   }
   arm();
