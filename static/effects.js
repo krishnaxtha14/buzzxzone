@@ -624,13 +624,13 @@ function initLineWaves(canvas, opts = {}) {
   const mouse = { x: 0.5, y: 0.5 };
   const mouseTarget = { x: 0.5, y: 0.5 };
   if (cfg.enableMouseInteraction) {
-    canvas.addEventListener('mousemove', e => {
+    // Listens on window, not the canvas — this background sits behind page
+    // content with pointer-events:none so clicks reach the UI above it,
+    // which means the canvas itself never receives mouse events.
+    window.addEventListener('mousemove', e => {
       const rect = canvas.getBoundingClientRect();
       mouseTarget.x = (e.clientX - rect.left) / (rect.width || 1);
       mouseTarget.y = 1 - (e.clientY - rect.top) / (rect.height || 1); // WebGL fragCoord.y is bottom-up
-    }, { passive: true });
-    canvas.addEventListener('mouseleave', () => {
-      mouseTarget.x = 0.5; mouseTarget.y = 0.5;
     }, { passive: true });
   }
 
