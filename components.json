@@ -1,5 +1,5 @@
 {
-  "$schema": "https://ui.shadcn.com/schema.json",
+  "$schema": "./schema.json",
   "registries": {
     "@react-bits": "https://reactbits.dev/r/{name}.json"
   }

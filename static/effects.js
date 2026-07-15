@@ -557,3 +557,172 @@ function initDotField(canvas, opts = {}) {
   }
   requestAnimationFrame(frame);
 }
+
+/* ── LineWaves: 1:1 port of reactbits.dev's LineWaves fragment shader
+   (originally WebGL/ogl — ported to canvas 2D since this app has no WebGL
+   build pipeline). Two domain-warped ridge fields are blended together and
+   lit per-channel off a slow colour cycle, which is what produces the wavy
+   contour-line look rather than plain sine stripes. ── */
+function initLineWaves(canvas, opts = {}) {
+  const cfg = Object.assign({
+    speed: 0.3, innerLineCount: 32, outerLineCount: 36, warpIntensity: 1,
+    rotation: -45, edgeFadeWidth: 0, colorCycleSpeed: 1, brightness: 0.2,
+    color1: '#ffffff', color2: '#ffffff', color3: '#ffffff',
+    enableMouseInteraction: true, mouseInfluence: 2,
+  }, opts);
+
+  const c1 = hexToRgb(cfg.color1), c2 = hexToRgb(cfg.color2), c3 = hexToRgb(cfg.color3);
+  const col1 = [c1.r / 255, c1.g / 255, c1.b / 255];
+  const col2 = [c2.r / 255, c2.g / 255, c2.b / 255];
+  const col3 = [c3.r / 255, c3.g / 255, c3.b / 255];
+  const HALF_PI = 1.5707963;
+
+  const ctx = canvas.getContext('2d');
+  // Fine ridge lines need real resolution to read as lines instead of mush,
+  // so this buffer is bigger than Silk's — recompute rate below pays for it.
+  const BUF = 180;
+  const buf = document.createElement('canvas');
+  buf.width = BUF; buf.height = BUF;
+  const bctx = buf.getContext('2d');
+  const img = bctx.createImageData(BUF, BUF);
+
+  const rot = cfg.rotation * Math.PI / 180;
+  const rotCos = Math.cos(rot), rotSin = Math.sin(rot);
+  function rotate(x, y) {
+    return [x * rotCos - y * rotSin, x * rotSin + y * rotCos];
+  }
+  function frac(x) { return x - Math.floor(x); }
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+  function hashF(n) { return frac(Math.sin(n * 127.1) * 43758.5453123); }
+  function smoothNoise(x) {
+    const i = Math.floor(x), f = x - i;
+    const u = f * f * (3 - 2 * f);
+    return hashF(i) + (hashF(i + 1) - hashF(i)) * u;
+  }
+  function displaceA(coord, t) {
+    let r = Math.sin(coord * 2.123) * 0.2;
+    r += Math.sin(coord * 3.234 + t * 4.345) * 0.1;
+    r += Math.sin(coord * 0.589 + t * 0.934) * 0.5;
+    return r;
+  }
+  function displaceB(coord, t) {
+    let r = Math.sin(coord * 1.345) * 0.3;
+    r += Math.sin(coord * 2.734 + t * 3.345) * 0.2;
+    r += Math.sin(coord * 0.189 + t * 0.934) * 0.3;
+    return r;
+  }
+
+  const mouse = { x: 0.5, y: 0.5 };
+  const mouseTarget = { x: 0.5, y: 0.5 };
+  if (cfg.enableMouseInteraction) {
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseTarget.x = (e.clientX - rect.left) / (rect.width || 1);
+      mouseTarget.y = 1 - (e.clientY - rect.top) / (rect.height || 1); // WebGL fragCoord.y is bottom-up
+    }, { passive: true });
+    canvas.addEventListener('mouseleave', () => {
+      mouseTarget.x = 0.5; mouseTarget.y = 0.5;
+    }, { passive: true });
+  }
+
+  function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let elapsed = 0, lastTs = 0, skip = 0;
+
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    elapsed += dt;
+
+    if (cfg.enableMouseInteraction) {
+      mouse.x += (mouseTarget.x - mouse.x) * 0.05;
+      mouse.y += (mouseTarget.y - mouse.y) * 0.05;
+    }
+
+    skip++;
+    if (skip >= 3) { // slow ambient field — recompute at ~20fps, upscale-draw every frame
+      skip = 0;
+      const halfT = elapsed * cfg.speed * 0.5;
+      const fullT = elapsed * cfg.speed;
+      const cycleT = fullT * cfg.colorCycleSpeed;
+      const cosFullT = Math.cos(fullT), sinFullT = Math.sin(fullT);
+      const [mrx, mry] = cfg.enableMouseInteraction ? rotate(mouse.x * 2 - 1, mouse.y * 2 - 1) : [0, 0];
+
+      const d = img.data;
+      for (let py = 0; py < BUF; py++) {
+        const cy = (1 - py / BUF) * 2 - 1; // flip to match WebGL's bottom-up fragCoord.y
+        for (let px = 0; px < BUF; px++) {
+          const cx = (px / BUF) * 2 - 1;
+          const [rx, ry] = rotate(cx, cy);
+
+          let mouseWarp = 0;
+          if (cfg.enableMouseInteraction) {
+            const mdx = rx - mrx, mdy = ry - mry;
+            mouseWarp = cfg.mouseInfluence * Math.exp(-(mdx * mdx + mdy * mdy) * 4);
+          }
+
+          const warpAx = rx + displaceA(ry, halfT) * cfg.warpIntensity + mouseWarp;
+          const warpAy = ry - displaceA(rx * cosFullT * 1.235, halfT) * cfg.warpIntensity;
+          const warpBx = rx + displaceB(ry, halfT) * cfg.warpIntensity + mouseWarp;
+          const warpBy = ry - displaceB(rx * sinFullT * 1.235, halfT) * cfg.warpIntensity;
+
+          // blended = mix(fieldA, fieldB, mix(fieldA, fieldB, 0.5)) — GLSL's vec2 mix
+          // applies the third arg component-wise, so this resolves in closed form.
+          const midX = (warpAx + warpBx) * 0.5, midY = (warpAy + warpBy) * 0.5;
+          const blendedX = warpAx + (warpBx - warpAx) * midX;
+          const blendedY = warpAy + (warpBy - warpAy) * midY;
+
+          const fadeTop = smoothstep(cfg.edgeFadeWidth, cfg.edgeFadeWidth + 0.4, blendedY);
+          const fadeBottom = smoothstep(-cfg.edgeFadeWidth, -(cfg.edgeFadeWidth + 0.4), blendedY);
+          const vMask = 1 - Math.max(fadeTop, fadeBottom);
+
+          const tileCount = cfg.outerLineCount + (cfg.innerLineCount - cfg.outerLineCount) * vMask;
+          const scaledY = blendedY * tileCount;
+          const nY = smoothNoise(Math.abs(scaledY));
+
+          // pow(x, 5) with a possibly-negative base: JS's Math.pow (unlike GLSL's
+          // exp2/log2-based pow) is exact for odd integer exponents, so this is
+          // used as-is rather than the sign/abs split a literal GLSL port implies.
+          const ridgeBase = (Math.abs(nY - blendedX) * 2 <= HALF_PI ? 1 : 0) * Math.cos(2 * (nY - blendedX));
+          const ridge = Math.pow(ridgeBase, 5);
+
+          const m = Math.max(frac(scaledY), frac(-scaledY));
+          const lines = m * m + m * m * m * m; // pow(m,2) + pow(m,4)
+
+          const pattern = vMask * lines;
+
+          const rChannel = (pattern + lines * ridge) * (Math.cos(blendedY + cycleT * 0.234) * 0.5 + 1);
+          const gChannel = (pattern + vMask * ridge) * (Math.sin(blendedX + cycleT * 1.745) * 0.5 + 1);
+          const bChannel = (pattern + lines * ridge) * (Math.cos(blendedX + cycleT * 0.534) * 0.5 + 1);
+
+          const colR = (rChannel * col1[0] + gChannel * col2[0] + bChannel * col3[0]) * cfg.brightness;
+          const colG = (rChannel * col1[1] + gChannel * col2[1] + bChannel * col3[1]) * cfg.brightness;
+          const colB = (rChannel * col1[2] + gChannel * col2[2] + bChannel * col3[2]) * cfg.brightness;
+          const alpha = Math.min(1, Math.max(0, Math.sqrt(colR * colR + colG * colG + colB * colB)));
+
+          const i4 = (py * BUF + px) * 4;
+          d[i4]     = Math.min(255, Math.max(0, colR * 255));
+          d[i4 + 1] = Math.min(255, Math.max(0, colG * 255));
+          d[i4 + 2] = Math.min(255, Math.max(0, colB * 255));
+          d[i4 + 3] = alpha * 255;
+        }
+      }
+      bctx.putImageData(img, 0, 0);
+    }
+
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(buf, 0, 0, w, h);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
