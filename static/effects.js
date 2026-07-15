@@ -707,10 +707,22 @@ function initLineWaves(canvas, opts = {}) {
           const gChannel = (pattern + vMask * ridge) * (Math.sin(blendedX + cycleT * 1.745) * 0.5 + 1);
           const bChannel = (pattern + lines * ridge) * (Math.cos(blendedX + cycleT * 0.534) * 0.5 + 1);
 
-          const colR = (rChannel * col1[0] + gChannel * col2[0] + bChannel * col3[0]) * cfg.brightness;
-          const colG = (rChannel * col1[1] + gChannel * col2[1] + bChannel * col3[1]) * cfg.brightness;
-          const colB = (rChannel * col1[2] + gChannel * col2[2] + bChannel * col3[2]) * cfg.brightness;
-          const alpha = Math.min(1, Math.max(0, Math.sqrt(colR * colR + colG * colG + colB * colB)));
+          let colR = (rChannel * col1[0] + gChannel * col2[0] + bChannel * col3[0]) * cfg.brightness;
+          let colG = (rChannel * col1[1] + gChannel * col2[1] + bChannel * col3[1]) * cfg.brightness;
+          let colB = (rChannel * col1[2] + gChannel * col2[2] + bChannel * col3[2]) * cfg.brightness;
+
+          // A hard clamp(length(col),0,1) here (the literal GLSL translation)
+          // saturates to fully-opaque white the moment the three channels sum
+          // past ~0.58, which — since the ridge term routinely spikes several
+          // times past 1 — reads as stark binary black/white bands rather
+          // than a soft wash. Soft-clip with an exponential instead so it
+          // eases toward full intensity, same motion/pattern, no hard edge.
+          const mag = Math.sqrt(colR * colR + colG * colG + colB * colB);
+          const alpha = 1 - Math.exp(-mag * 1.1);
+          if (mag > 0.0001) {
+            const scale = alpha / mag;
+            colR *= scale; colG *= scale; colB *= scale;
+          }
 
           const i4 = (py * BUF + px) * 4;
           d[i4]     = Math.min(255, Math.max(0, colR * 255));
