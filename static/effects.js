@@ -584,13 +584,27 @@ function initLineWaves(canvas, opts = {}) {
   const HALF_PI = 1.5707963;
 
   const ctx = canvas.getContext('2d');
-  // Fine ridge lines need real resolution to read as lines instead of mush,
-  // so this buffer is bigger than Silk's — recompute rate below pays for it.
-  const BUF = 180;
+  // Fine ridge lines need real resolution to read as lines instead of mush —
+  // a fixed small buffer stretched over a large viewport (the original
+  // approach here) upscales by 10-15x and the lines dissolve into blur.
+  // Instead size the buffer off the actual canvas, aspect-preserved, capped
+  // to a pixel budget so cost stays roughly constant regardless of screen size.
   const buf = document.createElement('canvas');
-  buf.width = BUF; buf.height = BUF;
   const bctx = buf.getContext('2d');
-  const img = bctx.createImageData(BUF, BUF);
+  let bufW = 0, bufH = 0, img = null;
+  const BUF_BUDGET = 90000;
+  function rebuildBuffer() {
+    const w = Math.max(1, canvas.width), h = Math.max(1, canvas.height);
+    const aspect = w / h;
+    let newH = Math.round(Math.sqrt(BUF_BUDGET / aspect));
+    let newW = Math.round(newH * aspect);
+    newW = Math.max(48, Math.min(newW, 640));
+    newH = Math.max(48, Math.min(newH, 640));
+    if (newW === bufW && newH === bufH) return;
+    bufW = newW; bufH = newH;
+    buf.width = bufW; buf.height = bufH;
+    img = bctx.createImageData(bufW, bufH);
+  }
 
   const rot = cfg.rotation * Math.PI / 180;
   const rotCos = Math.cos(rot), rotSin = Math.sin(rot);
@@ -634,7 +648,11 @@ function initLineWaves(canvas, opts = {}) {
     }, { passive: true });
   }
 
-  function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    rebuildBuffer();
+  }
   resize();
   window.addEventListener('resize', resize);
 
@@ -652,7 +670,7 @@ function initLineWaves(canvas, opts = {}) {
     }
 
     skip++;
-    if (skip >= 3) { // slow ambient field — recompute at ~20fps, upscale-draw every frame
+    if (skip >= 4) { // slow ambient field — recompute at ~15fps (buffer is bigger than the sibling effects', so this pays for it), upscale-draw every frame
       skip = 0;
       const halfT = elapsed * cfg.speed * 0.5;
       const fullT = elapsed * cfg.speed;
@@ -661,10 +679,10 @@ function initLineWaves(canvas, opts = {}) {
       const [mrx, mry] = cfg.enableMouseInteraction ? rotate(mouse.x * 2 - 1, mouse.y * 2 - 1) : [0, 0];
 
       const d = img.data;
-      for (let py = 0; py < BUF; py++) {
-        const cy = (1 - py / BUF) * 2 - 1; // flip to match WebGL's bottom-up fragCoord.y
-        for (let px = 0; px < BUF; px++) {
-          const cx = (px / BUF) * 2 - 1;
+      for (let py = 0; py < bufH; py++) {
+        const cy = (1 - py / bufH) * 2 - 1; // flip to match WebGL's bottom-up fragCoord.y
+        for (let px = 0; px < bufW; px++) {
+          const cx = (px / bufW) * 2 - 1;
           const [rx, ry] = rotate(cx, cy);
 
           let mouseWarp = 0;
@@ -724,7 +742,7 @@ function initLineWaves(canvas, opts = {}) {
             colR *= scale; colG *= scale; colB *= scale;
           }
 
-          const i4 = (py * BUF + px) * 4;
+          const i4 = (py * bufW + px) * 4;
           d[i4]     = Math.min(255, Math.max(0, colR * 255));
           d[i4 + 1] = Math.min(255, Math.max(0, colG * 255));
           d[i4 + 2] = Math.min(255, Math.max(0, colB * 255));
